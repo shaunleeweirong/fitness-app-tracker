@@ -12,8 +12,9 @@ A Flutter mobile app for weight lifters to track workouts, visualize muscle grou
 - ✅ **Phase 1A completed:** Foundation & Theme Setup
 - ✅ **UI Enhancement completed:** Modern professional styling applied
 - ✅ **ExerciseDB Integration completed:** API integration with 1,500+ exercises
-- ✅ **Common Exercise Database created:** 180 curated exercises (20 per body part)
+- ✅ **Exercise Database Enhancement completed:** 483 premium exercises with equipment-focused popular badges
 - ✅ **Phase 1C completed:** Professional Exercise Database with Visual Body Part Selection
+- ✅ **Popular Badge System completed:** Equipment-prioritized Tier 1 exercise highlighting
 - ⏳ **Currently on:** Ready for Phase 1D
 - 🔄 **Next:** Phase 1D - Basic Workout Logging
 
@@ -24,14 +25,15 @@ A Flutter mobile app for weight lifters to track workouts, visualize muscle grou
 ### Phase 1C: Professional Exercise Database with Visual Body Part Selection
 **Status:** ✅ **COMPLETED**
 
-#### ExerciseDB Integration & Common Exercise Database
+#### ExerciseDB Integration & Premium Exercise Database
 - **API Integration**: Successfully connected to free ExerciseDB API with 1,500+ exercises
-- **Data Extraction**: Created `common_exercises_database.json` with 180 curated exercises
-- **Body Part Coverage**: 9 body parts × 20 exercises each (chest, back, shoulders, upper arms, lower arms, upper legs, lower legs, waist, cardio)
+- **Data Extraction**: Created `common_exercises_database.json` with **483 premium exercises** (upgraded from 180)
+- **Body Part Coverage**: 9 body parts with optimized distribution (80 upper legs, 70 chest, 70 back, 60 shoulders, 50+ others)
 - **Exercise Details**: Complete data including GIF animations, instructions, muscle targeting, equipment requirements
-- **Selection Criteria**: Smart filtering based on equipment accessibility, popularity, safety, and effectiveness
-- **File Size**: 224.3KB JSON database ready for immediate app integration
-- **Success Rate**: 100% (180/180 target exercises extracted)
+- **Selection Criteria**: **Enhanced gym popularity filter** with tier-based scoring system prioritizing mainstream exercises
+- **File Size**: Enhanced JSON database with comprehensive exercise library
+- **Success Rate**: 100% (483/500 target exercises extracted)
+- **Popular Badge System**: Equipment-focused Tier 1 exercise identification with visual badges
 
 #### Interactive Body Silhouettes & Visual Selection
 - **Custom-Painted Body Diagrams**: Front and back view silhouettes with precise muscle region mapping
@@ -47,7 +49,49 @@ A Flutter mobile app for weight lifters to track workouts, visualize muscle grou
 - **Smart Data Strategy**: Hybrid approach using common database → API → cache → mock fallbacks
 - **Performance Optimized**: Instant loading with 180 curated exercises, API expansion available
 
-**Deliverable Achieved:** ✅ Professional exercise browsing experience with 1,500+ exercises, intuitive visual body part selection, and rich media content
+**Deliverable Achieved:** ✅ Professional exercise browsing experience with 1,500+ exercises, intuitive visual body part selection, equipment-focused popular badges, and rich media content
+
+### Popular Badge System Implementation ✅
+**Status:** ✅ **COMPLETED**  
+**Goal:** Intelligent exercise popularity identification with equipment prioritization
+
+#### Technical Implementation
+- **Equipment-Focused Logic**: Prioritizes barbell, dumbbell, machine, and cable exercises over bodyweight alternatives
+- **Tier-Based Pattern Matching**: Multi-level filtering system identifying core movement patterns
+- **Advanced Exclusions**: Comprehensive filtering of niche, advanced, and specialized exercise variations
+- **Consistent Application**: Same logic implemented across main.dart, CommonExerciseService, and ExerciseService
+- **Popularity-Based Sorting**: Popular exercises automatically appear at top of all exercise lists
+
+#### Selection Criteria Hierarchy
+1. **Equipment-Based Patterns** (Highest Priority):
+   - Barbell exercises: squat, deadlift, bench press, row
+   - Dumbbell exercises: press, row, fly, curl
+   - Machine exercises: leg press, lat pulldown, machine press
+   - Cable exercises: cable row, cable fly, tricep extension
+
+2. **Core Movement Patterns** (Equipment Required):
+   - Only applies to exercises using actual equipment (not bodyweight)
+   - Pattern matching: squat, deadlift, bench press, row, press, curl, extension, fly, raise, pulldown
+
+3. **Essential Bodyweight** (Selective):
+   - Limited to fundamental movements: basic push-ups, pull-ups, chin-ups, dips
+   - Excludes variations: no wide, diamond, incline, decline, pike, archer variations
+
+#### Visual Implementation
+- **Orange POPULAR Badge**: Distinctive badge overlay on exercise cards
+- **Positioned Top-Right**: Clear visibility without obscuring exercise imagery
+- **Consistent Styling**: Matches app's orange accent color (#FFB74D) with black text
+
+#### Results Achieved
+- **Balanced Distribution**: 105/483 exercises marked popular (21.7%)
+- **Equipment Focus**: Significantly reduced bodyweight popular badges (especially in back exercises)
+- **Body Part Coverage**: Each body part maintains adequate popular exercise representation
+- **User Experience**: Popular exercises appear first in all browsing scenarios (body part filtering, search, general browsing)
+
+**Technical Files Updated:**
+- `lib/main.dart`: Popular badge UI component and detection logic
+- `lib/services/common_exercise_service.dart`: Local database popular detection and sorting
+- `lib/services/exercise_service.dart`: API integration popular detection and sorting
 
 ---
 
@@ -67,13 +111,16 @@ A Flutter mobile app for weight lifters to track workouts, visualize muscle grou
 - [x] **COMPLETED:** Integrate ExerciseDB API (1,500+ exercises with GIF animations)
 - [x] **COMPLETED:** Implement API client with caching strategy (HTTP + local SQLite)
 - [x] **COMPLETED:** Build exercise selection screen with API-powered search/filter
-- [x] **COMPLETED:** Extract common exercise database (180 curated exercises across 9 body parts)
+- [x] **COMPLETED:** Extract premium exercise database (**483 exercises** with enhanced selection criteria)
+- [x] **COMPLETED:** Implement **gym popularity filter** with tier-based scoring system
+- [x] **COMPLETED:** Create **equipment-focused popular badge system** prioritizing weighted exercises
+- [x] **COMPLETED:** Add **popularity-based sorting** ensuring popular exercises appear first
 - [x] **COMPLETED:** Implement interactive body silhouettes for muscle group selection
 - [x] **COMPLETED:** Add visual body part filtering with custom-painted highlighting
 - [x] **COMPLETED:** Create body part mapping from ExerciseDB to visualization regions
 - [x] **COMPLETED:** Create exercise detail view with GIF animations and instructions
-- [x] **COMPLETED:** Integrate common exercise database with app (JSON → local storage)
-**Deliverable:** ✅ Professional exercise browsing with 1,500+ exercises, visual body part selection, and rich media content
+- [x] **COMPLETED:** Integrate enhanced exercise database with app (JSON → local storage)
+**Deliverable:** ✅ Professional exercise browsing with 1,500+ exercises, visual body part selection, equipment-focused popular badges, and rich media content
 
 ### Phase 1D: Basic Workout Logging
 **Goal:** Core workout tracking with customizable workout creation
@@ -532,10 +579,12 @@ shimmer: ^3.0.0              # Loading animations
 
 ### Implementation Status Summary
 - ✅ **Phase 1A Complete**: Enhanced UI foundation with professional styling
-- ⏳ **Next**: Phase 1C - Exercise Database with **body part visualization**
-- 🆕 **NEW Feature**: Interactive body silhouettes for muscle group selection & progress
-- 🔄 **Components**: 45+ Flutter widgets including body visualization components
+- ✅ **Phase 1C Complete**: Exercise Database with visual body part selection & popular badge system
+- ✅ **Popular Badge System**: Equipment-focused exercise highlighting with intelligent filtering
+- 🆕 **Exercise Database**: 483 premium exercises with tier-based popularity scoring
+- 🔄 **Components**: 45+ Flutter widgets including body visualization and popular badge components
 - 📦 **Packages**: 14 external dependencies including SVG support for body models
+- ⏳ **Next**: Phase 1D - Basic Workout Logging
 
 ---
 
@@ -574,8 +623,12 @@ Interactive body silhouettes for muscle group selection, workout customization, 
 
 ## Notes
 - ✅ Phase 1A (Foundation & Theme Setup) - **COMPLETED with modern UI enhancement**
+- ✅ Phase 1C (Exercise Database & Visual Body Selection) - **COMPLETED with popular badge system**
+- ✅ Popular Badge System - **COMPLETED with equipment-focused prioritization**
+- ✅ Exercise Database - **COMPLETED with 483 premium exercises and intelligent filtering**
 - Each phase should be fully functional before moving to next
 - Test incrementally after each phase
 - Prioritize core workout functionality before gamification features
 - **Always check MCP documentation** before starting new features or phases
 - **UI Standards**: App now follows modern fitness app design patterns with professional styling
+- **Popular Badges**: Equipment-based exercises prioritized over bodyweight alternatives for better gym experience

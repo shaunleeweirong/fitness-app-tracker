@@ -93,13 +93,17 @@ class CommonExerciseService {
   /// Get all common exercises
   Future<List<Exercise>> getAllExercises() async {
     await initialize();
-    return List.from(_allExercises ?? []);
+    final exercises = List<Exercise>.from(_allExercises ?? []);
+    _sortByPopularity(exercises);
+    return exercises;
   }
 
   /// Get exercises for a specific body part
   Future<List<Exercise>> getExercisesByBodyPart(String bodyPart) async {
     await initialize();
-    return List.from(_exercisesByBodyPart?[bodyPart.toLowerCase()] ?? []);
+    final exercises = List<Exercise>.from(_exercisesByBodyPart?[bodyPart.toLowerCase()] ?? []);
+    _sortByPopularity(exercises);
+    return exercises;
   }
 
   /// Get available body parts
@@ -117,7 +121,7 @@ class CommonExerciseService {
     final queryLower = query.toLowerCase();
     final allExercises = await getAllExercises();
     
-    return allExercises.where((exercise) {
+    final searchResults = allExercises.where((exercise) {
       // Search in exercise name
       if (exercise.name.toLowerCase().contains(queryLower)) return true;
       
@@ -135,6 +139,9 @@ class CommonExerciseService {
       
       return false;
     }).toList();
+    
+    _sortByPopularity(searchResults);
+    return searchResults;
   }
 
   /// Get exercises by equipment type
@@ -142,10 +149,13 @@ class CommonExerciseService {
     await initialize();
     final allExercises = await getAllExercises();
     
-    return allExercises.where((exercise) =>
+    final equipmentResults = allExercises.where((exercise) =>
       exercise.equipments.any((eq) => 
         eq.toLowerCase().contains(equipment.toLowerCase()))
     ).toList();
+    
+    _sortByPopularity(equipmentResults);
+    return equipmentResults;
   }
 
   /// Get a specific exercise by ID
@@ -208,7 +218,9 @@ class CommonExerciseService {
     if (allExercises.length <= count) return allExercises;
     
     allExercises.shuffle();
-    return allExercises.take(count).toList();
+    final randomResults = allExercises.take(count).toList();
+    _sortByPopularity(randomResults);
+    return randomResults;
   }
 
   /// Check if the database is loaded and available
@@ -219,4 +231,118 @@ class CommonExerciseService {
   
   /// Get the number of body parts covered
   int get bodyPartCount => _exercisesByBodyPart?.length ?? 0;
+
+  /// Sort exercises with popular exercises first
+  void _sortByPopularity(List<Exercise> exercises) {
+    exercises.sort((a, b) {
+      final aIsPopular = _isPopularExercise(a);
+      final bIsPopular = _isPopularExercise(b);
+      
+      // Popular exercises come first
+      if (aIsPopular && !bIsPopular) return -1;
+      if (!aIsPopular && bIsPopular) return 1;
+      
+      // Both same popularity level - maintain existing order
+      return 0;
+    });
+  }
+
+  /// Determine if an exercise is popular (prioritizing equipment-based exercises)
+  bool _isPopularExercise(Exercise exercise) {
+    final name = exercise.name.toLowerCase();
+    
+    // Exclude advanced/niche variations that shouldn't be popular
+    final excludePatterns = [
+      'single leg', 'single arm', 'one leg', 'one arm',
+      'alternating', 'bulgarian', 'pistol', 'archer',
+      'deficit', 'pause', 'tempo', 'isometric', 'eccentric',
+      'assisted', 'with support', 'rehabilitation', 'therapy',
+      'smith machine', 'lever machine', 'cable machine',
+      'plyometric', 'explosive', 'pulsing', 'static', 'dynamic',
+      'curtsey', 'sumo', 'zercher', 'jefferson',
+      'hindu', 'cossack', 'shrimp', 'sissy',
+      'jump', 'jumping', 'hop', 'bounce',
+      'reverse', 'inverted', 'twisted', 'twisting',
+      'kneeling', 'lying', 'seated', 'bent over',
+      'wide grip', 'narrow grip', 'close grip',
+      'behind neck', 'behind head', 'between',
+      'finger', 'wrist', 'thumb', 'forearm',
+      'v.', 'v2', 'variation', 'advanced',
+      'tennis ball', 'exercise ball', 'on the wall',
+      'staircase', 'step up', 'step down', 'drop',
+      'three', 'two', 'double', 'triple',
+      'suspended', 'potty', 'modified', 'split',
+      'side', 'lateral', 'front', 'rear',
+      'alternate', 'rotating', 'rotation',
+      'concentration', 'isolation', 'hammer',
+      'cable', 'band', 'swiss ball', 'bosu',
+      'wall', 'on bench', 'with bench',
+      'male', 'female', 'beginner', 'intermediate',
+      'waiter', 'cross', 'neutral grip', 'palm',
+      'groin', 'inner', 'outer',
+      'power point', 'hanging', 'flexion',
+      'zottman', 'preacher', 'korean', 'clap',
+      'wide hand', 'donkey', 'rocking', 'straight leg',
+    ];
+    
+    // Early return if exercise contains excluded patterns
+    for (final pattern in excludePatterns) {
+      if (name.contains(pattern)) {
+        return false;
+      }
+    }
+    
+    // Check if exercise uses equipment (prioritize over bodyweight)
+    final hasEquipment = exercise.equipments.isNotEmpty && 
+        !exercise.equipments.every((eq) => eq.toLowerCase().contains('body weight'));
+    
+    // Equipment-based core movements (highest priority)
+    final equipmentBasedPatterns = [
+      'barbell squat', 'barbell deadlift', 'barbell bench press', 'barbell row',
+      'dumbbell press', 'dumbbell row', 'dumbbell fly', 'dumbbell curl',
+      'lat pulldown', 'pulldown', 'leg press', 'machine press',
+      'cable row', 'cable fly', 'tricep extension', 'leg extension',
+      'leg curl', 'calf raise', 'shoulder press', 'chest press'
+    ];
+    
+    // Check equipment-based patterns first
+    for (final pattern in equipmentBasedPatterns) {
+      if (name.contains(pattern)) {
+        return true;
+      }
+    }
+    
+    // If exercise uses equipment, check core movement patterns
+    if (hasEquipment) {
+      final coreMovementPatterns = [
+        'squat', 'deadlift', 'bench press', 'row', 'press',
+        'curl', 'extension', 'fly', 'raise', 'pulldown'
+      ];
+      
+      for (final pattern in coreMovementPatterns) {
+        if (name.contains(pattern)) {
+          return true;
+        }
+      }
+    }
+    
+    // Only allow select bodyweight exercises that are truly essential
+    final essentialBodyweightPatterns = [
+      'push up', 'pushup', 'pull up', 'pullup', 'chin up', 'chin-up',
+      'dip' // Only basic dips, not all variations
+    ];
+    
+    for (final pattern in essentialBodyweightPatterns) {
+      if (name.contains(pattern)) {
+        // Extra check: avoid variations of bodyweight exercises
+        if (!name.contains('wide') && !name.contains('diamond') && 
+            !name.contains('incline') && !name.contains('decline') &&
+            !name.contains('pike') && !name.contains('archer')) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
 }

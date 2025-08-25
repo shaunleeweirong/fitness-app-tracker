@@ -1075,30 +1075,99 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     }
   }
 
-  /// Determine if an exercise is popular (Tier 1) based on gym popularity patterns
+  /// Determine if an exercise is popular (prioritizing equipment-based exercises)
   bool _isPopularExercise(Exercise exercise) {
     final name = exercise.name.toLowerCase();
     
-    // Tier 1: Absolute gym essentials (40 points)
-    final tier1Keywords = [
-      'squat',
-      'deadlift',
-      'bench press',
-      'bench',
-      'row',
-      'pull up',
-      'pullup',
-      'chin up',
-      'overhead press',
-      'military press',
-      'curl',
-      'extension',
+    // Exclude advanced/niche variations that shouldn't be popular
+    final excludePatterns = [
+      'single leg', 'single arm', 'one leg', 'one arm',
+      'alternating', 'bulgarian', 'pistol', 'archer',
+      'deficit', 'pause', 'tempo', 'isometric', 'eccentric',
+      'assisted', 'with support', 'rehabilitation', 'therapy',
+      'smith machine', 'lever machine', 'cable machine',
+      'plyometric', 'explosive', 'pulsing', 'static', 'dynamic',
+      'curtsey', 'sumo', 'zercher', 'jefferson',
+      'hindu', 'cossack', 'shrimp', 'sissy',
+      'jump', 'jumping', 'hop', 'bounce',
+      'reverse', 'inverted', 'twisted', 'twisting',
+      'kneeling', 'lying', 'seated', 'bent over',
+      'wide grip', 'narrow grip', 'close grip',
+      'behind neck', 'behind head', 'between',
+      'finger', 'wrist', 'thumb', 'forearm',
+      'v.', 'v2', 'variation', 'advanced',
+      'tennis ball', 'exercise ball', 'on the wall',
+      'staircase', 'step up', 'step down', 'drop',
+      'three', 'two', 'double', 'triple',
+      'suspended', 'potty', 'modified', 'split',
+      'side', 'lateral', 'front', 'rear',
+      'alternate', 'rotating', 'rotation',
+      'concentration', 'isolation', 'hammer',
+      'cable', 'band', 'swiss ball', 'bosu',
+      'wall', 'on bench', 'with bench',
+      'male', 'female', 'beginner', 'intermediate',
+      'waiter', 'cross', 'neutral grip', 'palm',
+      'groin', 'inner', 'outer',
+      'power point', 'hanging', 'flexion',
+      'zottman', 'preacher', 'korean', 'clap',
+      'wide hand', 'donkey', 'rocking', 'straight leg',
     ];
     
-    // Check if exercise name contains any Tier 1 patterns
-    for (final keyword in tier1Keywords) {
-      if (name.contains(keyword)) {
+    // Early return if exercise contains excluded patterns
+    for (final pattern in excludePatterns) {
+      if (name.contains(pattern)) {
+        return false;
+      }
+    }
+    
+    // Check if exercise uses equipment (prioritize over bodyweight)
+    final hasEquipment = exercise.equipments.isNotEmpty && 
+        !exercise.equipments.every((eq) => eq.toLowerCase().contains('body weight'));
+    
+    // Equipment-based core movements (highest priority)
+    final equipmentBasedPatterns = [
+      'barbell squat', 'barbell deadlift', 'barbell bench press', 'barbell row',
+      'dumbbell press', 'dumbbell row', 'dumbbell fly', 'dumbbell curl',
+      'lat pulldown', 'pulldown', 'leg press', 'machine press',
+      'cable row', 'cable fly', 'tricep extension', 'leg extension',
+      'leg curl', 'calf raise', 'shoulder press', 'chest press'
+    ];
+    
+    // Check equipment-based patterns first
+    for (final pattern in equipmentBasedPatterns) {
+      if (name.contains(pattern)) {
         return true;
+      }
+    }
+    
+    // If exercise uses equipment, check core movement patterns
+    if (hasEquipment) {
+      final coreMovementPatterns = [
+        'squat', 'deadlift', 'bench press', 'row', 'press',
+        'curl', 'extension', 'fly', 'raise', 'pulldown'
+      ];
+      
+      for (final pattern in coreMovementPatterns) {
+        if (name.contains(pattern)) {
+          return true;
+        }
+      }
+    }
+    
+    // Only allow select bodyweight exercises that are truly essential
+    final essentialBodyweightPatterns = [
+      'push up', 'pushup', 'pull up', 'pullup', 'chin up', 'chin-up',
+      'dip' // Only basic dips, not all variations
+    ];
+    
+    for (final pattern in essentialBodyweightPatterns) {
+      if (name.contains(pattern)) {
+        // Extra check: avoid variations of bodyweight exercises
+        if (!name.contains('wide') && !name.contains('diamond') && 
+            !name.contains('incline') && !name.contains('decline') &&
+            !name.contains('pike') && !name.contains('archer')) {
+          return true;
+        }
       }
     }
     
