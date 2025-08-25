@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="280" viewBox="0 0 120 280" xmlns="http://www.w3.org/2000/svg">
+  <!-- Professional Medical-Grade Human Body Silhouette - Front View -->
+  <g fill="#000000">
+    <!-- Head -->
+    <ellipse cx="60" cy="18" rx="9" ry="11"/>
+    
+    <!-- Neck -->
+    <ellipse cx="60" cy="32" rx="4" ry="6"/>
+    
+    <!-- Torso -->
+    <path d="M 32 42 
+             C 26 42 22 46 22 52
+             C 22 58 24 65 28 72
+             C 32 79 36 86 38 94
+             C 40 102 41 110 42 118
+             C 43 126 44 134 45 142
+             C 46 150 47 158 48 166
+             C 49 174 50 182 51 190
+             C 52 198 53 206 54 214
+             C 55 222 56 230 57 238
+             C 58 246 59 254 60 262
+             C 61 254 62 246 63 238
+             C 64 230 65 222 66 214
+             C 67 206 68 198 69 190
+             C 70 182 71 174 72 166
+             C 73 158 74 150 75 142
+             C 76 134 77 126 78 118
+             C 79 110 80 102 82 94
+             C 84 86 88 79 92 72
+             C 96 65 98 58 98 52
+             C 98 46 94 42 88 42
+             L 32 42 Z"/>
+    
+    <!-- Left Shoulder -->
+    <ellipse cx="26" cy="60" rx="8" ry="14" transform="rotate(-20 26 60)"/>
+    
+    <!-- Right Shoulder -->
+    <ellipse cx="94" cy="60" rx="8" ry="14" transform="rotate(20 94 60)"/>
+    
+    <!-- Left Upper Arm -->
+    <ellipse cx="18" cy="88" rx="6" ry="18" transform="rotate(-15 18 88)"/>
+    
+    <!-- Right Upper Arm -->
+    <ellipse cx="102" cy="88" rx="6" ry="18" transform="rotate(15 102 88)"/>
+    
+    <!-- Left Forearm -->
+    <ellipse cx="15" cy="115" rx="4" ry="15" transform="rotate(-10 15 115)"/>
+    
+    <!-- Right Forearm -->
+    <ellipse cx="105" cy="115" rx="4" ry="15" transform="rotate(10 105 115)"/>
+    
+    <!-- Left Hand -->
+    <ellipse cx="13" cy="135" rx="3" ry="7"/>
+    
+    <!-- Right Hand -->
+    <ellipse cx="107" cy="135" rx="3" ry="7"/>
+    
+    <!-- Left Thigh -->
+    <ellipse cx="50" cy="185" rx="8" ry="25"/>
+    
+    <!-- Right Thigh -->
+    <ellipse cx="70" cy="185" rx="8" ry="25"/>
+    
+    <!-- Left Calf -->
+    <ellipse cx="48" cy="235" rx="6" ry="20"/>
+    
+    <!-- Right Calf -->
+    <ellipse cx="72" cy="235" rx="6" ry="20"/>
+    
+    <!-- Left Foot -->
+    <ellipse cx="46" cy="265" rx="5" ry="4" transform="rotate(-10 46 265)"/>
+    
+    <!-- Right Foot -->
+    <ellipse cx="74" cy="265" rx="5" ry="4" transform="rotate(10 74 265)"/>
+  </g>
+</svg>

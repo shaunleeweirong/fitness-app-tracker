@@ -1,0 +1,37 @@
+# Weight Lifting Fitness Tracker - Claude Code Instructions
+
+## Session Startup Protocol
+At the start of each coding session:
+
+1. **Read CLAUDE.md** to check current project status and phase
+2. **Check MCP Documentation** before implementing new features:
+   - Run: `mcp__Context7__resolve-library-id flutter` for Flutter updates
+   - Run: `mcp__Context7__resolve-library-id firebase` for Firebase updates
+   - Search relevant documentation for the current development phase
+
+## Development Workflow
+- Follow the incremental phases defined in CLAUDE.md (1A through 1J)
+- Complete each phase fully before moving to the next
+- Update progress checkboxes in CLAUDE.md after completing tasks
+- Test each component incrementally
+
+## Key Reminders
+- **Dark theme by default** - gym-friendly UI with high contrast
+- **Large tap targets** - easy interaction during workouts
+- **Firebase integration** - always check latest documentation for auth and Firestore
+- **Security first** - review Firebase security rules and authentication best practices
+
+## Pre-Implementation Checklist
+Before coding any new feature:
+□ Check CLAUDE.md for current phase requirements
+□ Look up latest documentation via MCP tools
+□ Verify package versions and compatibility
+□ Review existing code patterns in the project
+
+## Testing Standards
+- Test on iOS simulator for each phase
+- Manual testing preferred for workout flow components
+- Ensure offline capability works properly
+- Validate dark theme readability
+
+This is a fitness tracking app with gamification - prioritize core workout functionality before advanced features.
