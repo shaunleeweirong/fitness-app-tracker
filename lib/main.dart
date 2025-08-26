@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'models/exercise.dart';
+import 'models/user_progress.dart';
 import 'services/exercise_service.dart';
+import 'services/mock_progress_service.dart';
 import 'screens/exercise_detail_screen.dart';
 import 'widgets/body_silhouette.dart';
+import 'widgets/progress_overview_widget.dart';
+import 'widgets/enhanced_stats_row.dart';
 
 void main() {
   runApp(const FitnessTrackerApp());
@@ -223,6 +227,8 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get mock progress data
+    final userProgress = MockProgressService.getMockProgress();
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -360,35 +366,16 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 
-                // Stats Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          context,
-                          '0',
-                          'Workouts\nCompleted',
-                          Icons.fitness_center,
-                          const Color(0xFFFFB74D),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          context,
-                          '0h',
-                          'Total Time\nExercised',
-                          Icons.timer,
-                          const Color(0xFF81C784),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // NEW: Visual Progress Section
+                ProgressOverviewWidget(userProgress: userProgress),
+                
+                // Enhanced: Stats with Trends
+                EnhancedStatsRow(userProgress: userProgress),
+                
+                // NEW: Achievements & Streaks
+                AchievementSummaryCard(userProgress: userProgress),
                 
                 const SizedBox(height: 32),
                 
