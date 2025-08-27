@@ -41,7 +41,7 @@ class EnhancedStatsRow extends StatelessWidget {
               _calculateTimeChangePercentage(weeklyComparison),
               _isTimeImproving(weeklyComparison),
               Icons.timer,
-              const Color(0xFF81C784),
+              const Color(0xFFFFB74D),
             ),
           ),
         ],
@@ -87,30 +87,28 @@ class EnhancedStatsRow extends StatelessWidget {
               Icon(icon, color: color, size: 24),
               if (changePercentage != 0) 
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Match Weekly Progress
                   decoration: BoxDecoration(
                     color: isImproving 
-                        ? Colors.green.withOpacity(0.2)
-                        : const Color(0xFFFFB74D).withOpacity(0.2), // Motivational orange instead of red
-                    borderRadius: BorderRadius.circular(8),
+                        ? const Color(0xFFFFB74D).withOpacity(0.2) // Orange to match app theme
+                        : Colors.red.withOpacity(0.2), // Match Weekly Progress red background
+                    borderRadius: BorderRadius.circular(8), // Match Weekly Progress
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isImproving ? Icons.trending_up : Icons.psychology, // Growth mindset icon instead of down arrow
-                        size: 10,
-                        color: isImproving ? Colors.green : const Color(0xFFFFB74D), // Motivational orange
+                        isImproving ? Icons.arrow_upward : Icons.arrow_downward, // Match Weekly Progress icons
+                        size: 12, // Match Weekly Progress size
+                        color: isImproving ? const Color(0xFFFFB74D) : Colors.red, // Orange for improvement, red for decline
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4), // Match Weekly Progress spacing
                       Text(
-                        isImproving 
-                            ? '${changePercentage.abs().toStringAsFixed(0)}%'
-                            : 'Grow!', // Shorter growth-focused messaging
+                        '${changePercentage.abs().toStringAsFixed(0)}%',
                         style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                          color: isImproving ? Colors.green : const Color(0xFFFFB74D), // Motivational orange
+                          fontSize: 11, // Match Weekly Progress font size
+                          fontWeight: FontWeight.w600, // Match Weekly Progress font weight
+                          color: isImproving ? const Color(0xFFFFB74D) : Colors.red, // Orange for improvement, red for decline
                         ),
                       ),
                     ],
@@ -138,10 +136,10 @@ class EnhancedStatsRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   isImproving 
-                      ? '(+${(int.tryParse(currentValue) ?? 0) - (int.tryParse(previousValue) ?? 0)})'
-                      : '(opportunity zone)', // Growth-focused language
+                      ? '(+${_calculateDifference(currentValue, previousValue)})'
+                      : '(${_calculateDifference(currentValue, previousValue)})',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: isImproving ? Colors.green : const Color(0xFFFFB74D), // Motivational orange
+                    color: isImproving ? const Color(0xFFFFB74D) : Colors.white70, // Orange to match app theme
                     fontWeight: FontWeight.w600,
                     fontSize: 10,
                   ),
@@ -216,6 +214,22 @@ class EnhancedStatsRow extends StatelessWidget {
     final thisWeekMinutes = comparison.currentWorkouts * 45; // Assume 45 min per workout
     final duration = Duration(minutes: thisWeekMinutes);
     return _formatDuration(duration);
+  }
+
+  String _calculateDifference(String currentValue, String previousValue) {
+    // Handle volume values (with K suffix)
+    if (currentValue.contains('K') && previousValue.contains('K')) {
+      final current = double.tryParse(currentValue.replaceAll('K', '')) ?? 0;
+      final previous = double.tryParse(previousValue.replaceAll('K', '')) ?? 0;
+      final diff = current - previous;
+      return '${diff.toStringAsFixed(1)}K';
+    }
+    
+    // Handle integer values (workouts, time)
+    final current = int.tryParse(currentValue.split(' ')[0]) ?? 0; // Get number part only
+    final previous = int.tryParse(previousValue.split(' ')[0]) ?? 0;
+    final diff = current - previous;
+    return diff.toString();
   }
 
   double _calculateTimeChangePercentage(ProgressComparison comparison) {
@@ -312,7 +326,7 @@ class VolumeProgressCard extends StatelessWidget {
                 context,
                 'Total Volume',
                 '${(userProgress.currentStats.totalVolumeLifted / 1000).toStringAsFixed(1)}K',
-                'lbs',
+                'kg',
                 const Color(0xFF7E57C2),
               ),
               _buildVolumeStat(
@@ -320,7 +334,7 @@ class VolumeProgressCard extends StatelessWidget {
                 'This Week',
                 '${(weeklyComparison.currentValue / 1000).toStringAsFixed(1)}K',
                 weeklyComparison.changeIndicator,
-                weeklyComparison.isImproving ? Colors.green : Colors.red,
+                weeklyComparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
               ),
               _buildVolumeStat(
                 context,

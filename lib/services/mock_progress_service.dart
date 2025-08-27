@@ -29,7 +29,7 @@ class MockProgressService {
           exerciseId: 'bench_press',
           exerciseName: 'Barbell Bench Press',
           bodyParts: ['chest'],
-          weight: 135 + (i * 2.5), // Progressive overload
+          weight: 61 + (i * 1.1), // Progressive overload in KG (135 lbs = ~61 kg)
           reps: 10,
           setNumber: 1,
           timestamp: date.add(const Duration(hours: 10)),
@@ -38,7 +38,7 @@ class MockProgressService {
           exerciseId: 'bench_press',
           exerciseName: 'Barbell Bench Press',
           bodyParts: ['chest'],
-          weight: 135 + (i * 2.5),
+          weight: 61 + (i * 1.1),
           reps: 8,
           setNumber: 2,
           timestamp: date.add(const Duration(hours: 10, minutes: 5)),
@@ -47,7 +47,7 @@ class MockProgressService {
           exerciseId: 'squat',
           exerciseName: 'Barbell Squat',
           bodyParts: ['legs', 'upper legs'],
-          weight: 185 + (i * 5), // Progressive overload
+          weight: 84 + (i * 2.3), // Progressive overload in KG (185 lbs = ~84 kg)
           reps: 12,
           setNumber: 1,
           timestamp: date.add(const Duration(hours: 10, minutes: 10)),
@@ -56,7 +56,7 @@ class MockProgressService {
           exerciseId: 'squat',
           exerciseName: 'Barbell Squat',
           bodyParts: ['legs', 'upper legs'],
-          weight: 185 + (i * 5),
+          weight: 84 + (i * 2.3),
           reps: 10,
           setNumber: 2,
           timestamp: date.add(const Duration(hours: 10, minutes: 15)),
@@ -71,11 +71,11 @@ class MockProgressService {
         endTime: date.add(const Duration(hours: 10, minutes: 45)),
         exerciseSets: exerciseSets,
         bodyPartVolumeMap: {
-          'chest': (135 + i * 2.5) * 18, // weight * total reps
-          'legs': (185 + i * 5) * 22,
-          'upper legs': (185 + i * 5) * 22,
+          'chest': (61 + i * 1.1) * 18, // weight * total reps in KG
+          'legs': (84 + i * 2.3) * 22,
+          'upper legs': (84 + i * 2.3) * 22,
         },
-        totalVolume: (135 + i * 2.5) * 18 + (185 + i * 5) * 44, // chest + legs
+        totalVolume: (61 + i * 1.1) * 18 + (84 + i * 2.3) * 44, // chest + legs in KG
         duration: const Duration(minutes: 45),
         isCompleted: true,
       );

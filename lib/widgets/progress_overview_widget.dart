@@ -59,7 +59,7 @@ class ProgressOverviewWidget extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: weeklyComparison.isImproving 
-                      ? Colors.green.withOpacity(0.2)
+                      ? const Color(0xFFFFB74D).withOpacity(0.2) // Orange to match app theme
                       : Colors.red.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -69,7 +69,7 @@ class ProgressOverviewWidget extends StatelessWidget {
                     Icon(
                       weeklyComparison.isImproving ? Icons.arrow_upward : Icons.arrow_downward,
                       size: 12,
-                      color: weeklyComparison.isImproving ? Colors.green : Colors.red,
+                      color: weeklyComparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -77,7 +77,7 @@ class ProgressOverviewWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: weeklyComparison.isImproving ? Colors.green : Colors.red,
+                        color: weeklyComparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
                       ),
                     ),
                   ],
@@ -110,7 +110,7 @@ class ProgressOverviewWidget extends StatelessWidget {
               _buildQuickStat(
                 context,
                 'Volume',
-                '${(weeklyComparison.currentValue / 1000).toStringAsFixed(1)}K lbs',
+                '${(weeklyComparison.currentValue / 1000).toStringAsFixed(1)}K kg',
                 weeklyComparison.changeIndicator,
                 weeklyComparison.isImproving,
               ),
@@ -241,7 +241,7 @@ class ProgressOverviewWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: isPositive ? Colors.green : Colors.red,
+                color: isPositive ? const Color(0xFFFFB74D) : Colors.red,
               ),
             ),
           ],
