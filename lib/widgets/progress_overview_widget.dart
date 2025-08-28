@@ -48,7 +48,7 @@ class ProgressOverviewWidget extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Weekly Progress',
+                'Weekly Volume Progress',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -144,7 +144,40 @@ class ProgressOverviewWidget extends StatelessWidget {
     return LineChart(
       LineChartData(
         gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(show: false),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            axisNameWidget: Text(
+              'Volume (kg)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white54,
+                fontSize: 10,
+              ),
+            ),
+            sideTitles: const SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 20,
+              getTitlesWidget: (value, meta) {
+                const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                if (value.toInt() >= 0 && value.toInt() < days.length) {
+                  return Text(
+                    days[value.toInt()],
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white54,
+                      fontSize: 10,
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+            ),
+          ),
+        ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
           LineChartBarData(

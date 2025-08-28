@@ -13,55 +13,226 @@ class MockProgressService {
     for (int i = 0; i < 14; i++) {
       final date = today.subtract(Duration(days: i));
       
-      // Create more realistic weekly patterns: 3-4 workouts per week
-      // This week (days 0-6): 3 workouts (days 1, 3, 5)  
-      // Last week (days 7-13): 4 workouts (days 8, 10, 11, 13)
+      // Create realistic weekly patterns with varied volume levels
+      // This week (days 0-6): Monday, Wednesday, Friday, Saturday workouts
+      // Last week (days 7-13): More workouts for comparison
       final isThisWeek = i <= 6;
-      final shouldWorkout = isThisWeek 
-          ? [1, 3, 5].contains(i)  // This week: 3 workouts
-          : [8, 10, 11, 13].contains(i);  // Last week: 4 workouts
       
-      if (!shouldWorkout) continue;
+      // Define workout types and intensities
+      String workoutType = 'rest';
+      double intensityMultiplier = 0.0;
       
-      // Create mock exercise sets
-      final exerciseSets = <ExerciseSet>[
-        ExerciseSet(
-          exerciseId: 'bench_press',
-          exerciseName: 'Barbell Bench Press',
-          bodyParts: ['chest'],
-          weight: 61 + (i * 1.1), // Progressive overload in KG (135 lbs = ~61 kg)
-          reps: 10,
-          setNumber: 1,
-          timestamp: date.add(const Duration(hours: 10)),
-        ),
-        ExerciseSet(
-          exerciseId: 'bench_press',
-          exerciseName: 'Barbell Bench Press',
-          bodyParts: ['chest'],
-          weight: 61 + (i * 1.1),
-          reps: 8,
-          setNumber: 2,
-          timestamp: date.add(const Duration(hours: 10, minutes: 5)),
-        ),
-        ExerciseSet(
-          exerciseId: 'squat',
-          exerciseName: 'Barbell Squat',
-          bodyParts: ['legs', 'upper legs'],
-          weight: 84 + (i * 2.3), // Progressive overload in KG (185 lbs = ~84 kg)
-          reps: 12,
-          setNumber: 1,
-          timestamp: date.add(const Duration(hours: 10, minutes: 10)),
-        ),
-        ExerciseSet(
-          exerciseId: 'squat',
-          exerciseName: 'Barbell Squat',
-          bodyParts: ['legs', 'upper legs'],
-          weight: 84 + (i * 2.3),
-          reps: 10,
-          setNumber: 2,
-          timestamp: date.add(const Duration(hours: 10, minutes: 15)),
-        ),
-      ];
+      if (isThisWeek) {
+        // This week pattern: M(heavy legs), W(medium upper), F(heavy upper), S(light)
+        switch (i) {
+          case 0: // Monday - Heavy leg day
+            workoutType = 'heavy_legs';
+            intensityMultiplier = 2.5;
+            break;
+          case 2: // Wednesday - Medium upper body
+            workoutType = 'medium_upper';
+            intensityMultiplier = 1.2;
+            break;
+          case 4: // Friday - Heavy upper body
+            workoutType = 'heavy_upper';
+            intensityMultiplier = 2.0;
+            break;
+          case 5: // Saturday - Light accessories
+            workoutType = 'light_accessories';
+            intensityMultiplier = 0.6;
+            break;
+          default:
+            continue; // Rest days
+        }
+      } else {
+        // Last week - more frequent workouts for comparison
+        if ([7, 9, 10, 12, 13].contains(i)) {
+          workoutType = 'standard';
+          intensityMultiplier = 1.5;
+        } else {
+          continue; // Rest days
+        }
+      }
+      
+      if (workoutType == 'rest') continue;
+      
+      // Create mock exercise sets based on workout type
+      final exerciseSets = <ExerciseSet>[];
+      
+      if (workoutType == 'heavy_legs') {
+        // Heavy leg day - high volume squats and deadlifts
+        exerciseSets.addAll([
+          ExerciseSet(
+            exerciseId: 'squat',
+            exerciseName: 'Barbell Squat',
+            bodyParts: ['legs', 'upper legs'],
+            weight: 100.0 * intensityMultiplier, // Heavy weight
+            reps: 5,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'squat',
+            exerciseName: 'Barbell Squat',
+            bodyParts: ['legs', 'upper legs'],
+            weight: 100.0 * intensityMultiplier,
+            reps: 5,
+            setNumber: 2,
+            timestamp: date.add(const Duration(hours: 10, minutes: 5)),
+          ),
+          ExerciseSet(
+            exerciseId: 'squat',
+            exerciseName: 'Barbell Squat',
+            bodyParts: ['legs', 'upper legs'],
+            weight: 100.0 * intensityMultiplier,
+            reps: 5,
+            setNumber: 3,
+            timestamp: date.add(const Duration(hours: 10, minutes: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'deadlift',
+            exerciseName: 'Barbell Deadlift',
+            bodyParts: ['legs', 'back', 'upper legs'],
+            weight: 120.0 * intensityMultiplier, // Heavy deadlift
+            reps: 3,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10, minutes: 15)),
+          ),
+          ExerciseSet(
+            exerciseId: 'deadlift',
+            exerciseName: 'Barbell Deadlift',
+            bodyParts: ['legs', 'back', 'upper legs'],
+            weight: 120.0 * intensityMultiplier,
+            reps: 3,
+            setNumber: 2,
+            timestamp: date.add(const Duration(hours: 10, minutes: 20)),
+          ),
+        ]);
+      } else if (workoutType == 'heavy_upper') {
+        // Heavy upper body - bench press and rows
+        exerciseSets.addAll([
+          ExerciseSet(
+            exerciseId: 'bench_press',
+            exerciseName: 'Barbell Bench Press',
+            bodyParts: ['chest'],
+            weight: 80.0 * intensityMultiplier, // Heavy bench
+            reps: 5,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'bench_press',
+            exerciseName: 'Barbell Bench Press',
+            bodyParts: ['chest'],
+            weight: 80.0 * intensityMultiplier,
+            reps: 5,
+            setNumber: 2,
+            timestamp: date.add(const Duration(hours: 10, minutes: 5)),
+          ),
+          ExerciseSet(
+            exerciseId: 'bench_press',
+            exerciseName: 'Barbell Bench Press',
+            bodyParts: ['chest'],
+            weight: 80.0 * intensityMultiplier,
+            reps: 5,
+            setNumber: 3,
+            timestamp: date.add(const Duration(hours: 10, minutes: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'barbell_row',
+            exerciseName: 'Barbell Row',
+            bodyParts: ['back'],
+            weight: 70.0 * intensityMultiplier,
+            reps: 6,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10, minutes: 15)),
+          ),
+          ExerciseSet(
+            exerciseId: 'barbell_row',
+            exerciseName: 'Barbell Row',
+            bodyParts: ['back'],
+            weight: 70.0 * intensityMultiplier,
+            reps: 6,
+            setNumber: 2,
+            timestamp: date.add(const Duration(hours: 10, minutes: 20)),
+          ),
+        ]);
+      } else if (workoutType == 'medium_upper') {
+        // Medium upper body workout
+        exerciseSets.addAll([
+          ExerciseSet(
+            exerciseId: 'dumbbell_press',
+            exerciseName: 'Dumbbell Press',
+            bodyParts: ['chest'],
+            weight: 25.0 * intensityMultiplier, // Medium weight dumbbells
+            reps: 10,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'dumbbell_press',
+            exerciseName: 'Dumbbell Press',
+            bodyParts: ['chest'],
+            weight: 25.0 * intensityMultiplier,
+            reps: 10,
+            setNumber: 2,
+            timestamp: date.add(const Duration(hours: 10, minutes: 5)),
+          ),
+          ExerciseSet(
+            exerciseId: 'lat_pulldown',
+            exerciseName: 'Lat Pulldown',
+            bodyParts: ['back'],
+            weight: 50.0 * intensityMultiplier,
+            reps: 12,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10, minutes: 10)),
+          ),
+        ]);
+      } else if (workoutType == 'light_accessories') {
+        // Light accessory workout
+        exerciseSets.addAll([
+          ExerciseSet(
+            exerciseId: 'bicep_curl',
+            exerciseName: 'Dumbbell Bicep Curl',
+            bodyParts: ['arms'],
+            weight: 12.0 * intensityMultiplier, // Light weight
+            reps: 15,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'tricep_extension',
+            exerciseName: 'Tricep Extension',
+            bodyParts: ['arms'],
+            weight: 10.0 * intensityMultiplier,
+            reps: 15,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10, minutes: 5)),
+          ),
+        ]);
+      } else {
+        // Standard workout for previous week
+        exerciseSets.addAll([
+          ExerciseSet(
+            exerciseId: 'bench_press',
+            exerciseName: 'Barbell Bench Press',
+            bodyParts: ['chest'],
+            weight: 70.0 * intensityMultiplier,
+            reps: 8,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10)),
+          ),
+          ExerciseSet(
+            exerciseId: 'squat',
+            exerciseName: 'Barbell Squat',
+            bodyParts: ['legs', 'upper legs'],
+            weight: 90.0 * intensityMultiplier,
+            reps: 8,
+            setNumber: 1,
+            timestamp: date.add(const Duration(hours: 10, minutes: 10)),
+          ),
+        ]);
+      }
       
       // Create completed session
       final session = WorkoutSession(
@@ -70,12 +241,8 @@ class MockProgressService {
         startTime: date.add(const Duration(hours: 10)),
         endTime: date.add(const Duration(hours: 10, minutes: 45)),
         exerciseSets: exerciseSets,
-        bodyPartVolumeMap: {
-          'chest': (61 + i * 1.1) * 18, // weight * total reps in KG
-          'legs': (84 + i * 2.3) * 22,
-          'upper legs': (84 + i * 2.3) * 22,
-        },
-        totalVolume: (61 + i * 1.1) * 18 + (84 + i * 2.3) * 44, // chest + legs in KG
+        bodyPartVolumeMap: _calculateBodyPartVolume(exerciseSets),
+        totalVolume: _calculateTotalVolume(exerciseSets),
         duration: const Duration(minutes: 45),
         isCompleted: true,
       );
@@ -152,5 +319,23 @@ class MockProgressService {
       streakData: streakData,
       milestones: [],
     );
+  }
+
+  static Map<String, double> _calculateBodyPartVolume(List<ExerciseSet> exerciseSets) {
+    final bodyPartVolume = <String, double>{};
+    
+    for (final exerciseSet in exerciseSets) {
+      final volume = exerciseSet.weight * exerciseSet.reps;
+      
+      for (final bodyPart in exerciseSet.bodyParts) {
+        bodyPartVolume[bodyPart] = (bodyPartVolume[bodyPart] ?? 0) + volume;
+      }
+    }
+    
+    return bodyPartVolume;
+  }
+
+  static double _calculateTotalVolume(List<ExerciseSet> exerciseSets) {
+    return exerciseSets.fold(0.0, (sum, set) => sum + (set.weight * set.reps));
   }
 }

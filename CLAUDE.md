@@ -1,9 +1,21 @@
 # Weight Lifting Fitness Tracker - Development Plan
 
 ## Project Overview
-A Flutter mobile app for weight lifters to track workouts, visualize muscle group progress, and gamify the lifting experience. Features dark mode UI, Firebase backend, and radar chart visualizations.
+A Flutter mobile app designed for weight lifters of all experience levels to track workouts, visualize muscle group progress, and gamify the lifting experience. The app eliminates the need to memorize workout routines during gym sessions by offering fast logging tools, visual feedback, and motivational progress tracking.
 
 **Target:** iOS MVP first, then Android in Phase 2
+
+### App Objectives
+- **Primary**: Track workouts with fast, intuitive logging for gym environments
+- **Secondary**: Visualize muscle group progress through gamification and radar charts
+- **Motivational**: Gamify the weight lifting process to encourage progress and fun
+- **Visual**: Provide immediate progress feedback to address fitness app abandonment (73% users quit within 30 days due to lack of visual progress)
+
+### Target Audience
+- Weight lifters (beginners to advanced)
+- Users seeking structured progress tracking
+- Fitness enthusiasts interested in gamified motivation
+- Gym-goers who want data-driven workout insights
 
 ## Current Status
 - ✅ Requirements analyzed
@@ -265,33 +277,75 @@ dependencies:
 
 ---
 
+## Core Features & Functionality
+
+### Phase 1 (MVP Features)
+- **User Registration/Login**: Email/password and Google OAuth authentication
+- **Workout Logging**: Exercise name, sets, reps, weight with fast entry interface
+- **Rest Timer**: Countdown timer between sets with audio/vibration notifications
+- **Progress Tracking**: Volume calculation (weight × reps × sets) per body part
+- **Visual Progress**: Radar chart visualization of body part development
+- **Gamification System**: XP accumulation per body part, level progression, achievement badges
+- **Exercise Database**: 1,500+ exercises with GIF animations and equipment-focused filtering
+
+### Phase 2 (Future Features)
+- **Social Features**: Leaderboards (most volume lifted), community challenges
+- **Advanced Gamification**: Streaks (daily/weekly consistency), weekly challenges ("Lift 5,000 lbs for back this week")
+- **Platform Expansion**: Android version release
+- **Integrations**: Apple Health / Google Fit data sync
+
 ## Data Models
 
 ### Users
-- userId (string, unique)
-- email (string, unique)
-- name (string)
-- authProvider (enum: email, google)
+```dart
+class User {
+  String userId;           // Unique identifier
+  String email;           // Email address (unique)
+  String name;            // Display name
+  AuthProvider provider;  // enum: email, google
+  DateTime createdAt;     // Registration timestamp
+  Map<String, int> bodyPartLevels; // XP levels per body part
+}
+```
 
 ### Exercises
-- exerciseId (string, unique)
-- name (string)
-- targetBodyPart (string)
+```dart
+class Exercise {
+  String exerciseId;         // Unique identifier
+  String name;              // Exercise name
+  List<String> bodyParts;   // Target body parts
+  String equipment;         // Required equipment
+  String instructions;      // Step-by-step guide
+  String gifUrl;           // Animation URL
+  bool isPopular;          // Equipment-focused popularity badge
+}
+```
 
 ### Workout Log
-- logId (string, unique)
-- userId (string, FK)
-- exerciseId (string, FK)
-- weight (number)
-- sets (number)
-- reps (number)
-- timestamp (datetime)
+```dart
+class WorkoutLog {
+  String logId;        // Unique identifier
+  String userId;       // Foreign key to Users
+  String exerciseId;   // Foreign key to Exercises
+  double weight;       // Weight lifted (kg)
+  int sets;           // Number of sets
+  int reps;           // Reps per set
+  DateTime timestamp; // When exercise was performed
+  double volume;      // Calculated: weight × reps × sets
+}
+```
 
 ### Body Part Progress
-- userId (string, FK)
-- bodyPart (string)
-- volume (number)
-- xpLevel (number)
+```dart
+class BodyPartProgress {
+  String userId;          // Foreign key to Users
+  String bodyPart;        // Body part name
+  double totalVolume;     // Lifetime volume lifted
+  int xpLevel;           // Current XP level
+  DateTime lastWorked;   // Last workout date
+  List<Achievement> achievements; // Unlocked achievements
+}
+```
 
 ---
 
@@ -333,11 +387,27 @@ flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE
 ---
 
 ## Design Principles
-- **Dark mode by default** (gym-friendly)
-- **Large tap targets** for easy interaction during workouts
-- **High-contrast text** for readability in dim lighting
-- **Minimalist layout** to reduce distractions
-- **Centered CTAs** with step-by-step flows
+
+### UI/UX Guidelines
+- **Dark mode by default** - Gym-friendly interface optimized for low-light environments
+- **Large tap targets** - Easy interaction during workouts with gloves or sweaty hands
+- **High-contrast text** - Readable in dimly lit gym environments
+- **Minimalist layout** - Reduce distractions and focus on core functionality
+- **Centered CTAs** - Step-by-step flows for onboarding and setup
+- **Visual progress focus** - Immediate feedback on achievements to address 73% user abandonment
+
+### Professional Styling Standards
+- **Enhanced Dark Theme**: Deep backgrounds (#0A0A0A), sophisticated surfaces (#1A1A1A, #2A2A2A)
+- **Orange Accent Color**: Consistent #FFB74D for improvements, achievements, and CTAs
+- **Material Design 3**: Professional gradients, proper shadows, enhanced typography hierarchy
+- **Equipment-Focused Design**: Prioritize barbell/dumbbell exercises over bodyweight alternatives
+
+### Security Considerations
+- **Firebase Authentication**: JWT token management handled by Firebase SDK
+- **Secure Access Rules**: Firestore per-userId data isolation
+- **Data Encryption**: User data encrypted in transit and at rest
+- **OAuth Integration**: Email/password and Google Sign-In with secure token handling
+- **Privacy by Design**: No unnecessary data collection, user-controlled data retention
 
 ---
 
@@ -362,11 +432,24 @@ flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE
 ---
 
 ## Phase 2 Features (Future)
-- Android release
-- Leaderboards
-- Streak tracking
-- Weekly challenges
-- Social features
+
+### Platform & Technical Expansion
+- **Android Release**: Adapt app using Flutter's cross-platform support, Google Play Store launch
+- **Performance Scaling**: Backend optimization for larger user base, advanced caching strategies
+- **Offline Capabilities**: Enhanced local storage with improved sync resolution
+
+### Social & Gamification Features
+- **Leaderboards**: Rank users by total volume, body part XP, workout streaks, personal records
+- **Streak Tracking**: Daily/weekly consistency badges, streak recovery mechanics
+- **Weekly Challenges**: Community goals ("Lift X lbs in Y days"), seasonal competitions
+- **Social Features**: Friend connections, workout sharing, community leaderboards
+
+### Advanced Features & Integrations
+- **Apple Health / Google Fit Integration**: Sync workout data with health platforms
+- **Workout Plan Generator**: AI-based routine suggestions based on progress and goals
+- **AI Coaching**: Personalized recommendations for exercise selection and progression
+- **Wearable Support**: Apple Watch, Fitbit integration for real-time workout tracking
+- **Advanced Analytics**: Detailed progress reports, plateau detection, optimization suggestions
 
 ---
 
