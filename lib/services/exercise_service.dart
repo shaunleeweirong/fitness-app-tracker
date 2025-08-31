@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/exercise.dart';
 import 'exercise_api_client.dart';
 import 'exercise_database.dart';
@@ -25,7 +26,7 @@ class ExerciseService {
     bool forceRefresh = false,
     bool useCommonDatabase = true,
   }) async {
-    print('🔍 ExerciseService.getExercises called - bodyPart: $bodyPart, limit: $limit, useCommon: $useCommonDatabase'); // Debug
+    debugPrint('🔍 ExerciseService.getExercises called - bodyPart: $bodyPart, limit: $limit, useCommon: $useCommonDatabase'); // Debug
     
     // Strategy 1: Use common exercise database for fast, curated results
     if (useCommonDatabase && !forceRefresh) {
@@ -43,11 +44,11 @@ class ExerciseService {
         }
         
         if (commonExercises.isNotEmpty) {
-          print('✅ Found ${commonExercises.length} exercises from common database'); // Debug
+          debugPrint('✅ Found ${commonExercises.length} exercises from common database'); // Debug
           return commonExercises.take(limit).toList();
         }
       } catch (e) {
-        print('⚠️ Common database unavailable, falling back to API: $e'); // Debug
+        debugPrint('⚠️ Common database unavailable, falling back to API: $e'); // Debug
       }
     }
     
@@ -62,37 +63,37 @@ class ExerciseService {
         );
         
         if (cachedExercises.isNotEmpty) {
-          print('✅ Found ${cachedExercises.length} cached exercises'); // Debug
+          debugPrint('✅ Found ${cachedExercises.length} cached exercises'); // Debug
           final filteredExercises = _filterExercises(cachedExercises, searchQuery: searchQuery);
           _sortByPopularity(filteredExercises);
           return filteredExercises;
         }
       }
 
-      print('🌐 Attempting API call...'); // Debug
+      debugPrint('🌐 Attempting API call...'); // Debug
       
       // Fetch from API using new endpoints
       List<Exercise> exercises;
       
       try {
         if (bodyPart != null) {
-          print('🔍 Calling getExercisesByBodyPart for: $bodyPart');
+          debugPrint('🔍 Calling getExercisesByBodyPart for: $bodyPart');
           exercises = await _apiClient.getExercisesByBodyPart(bodyPart, limit: limit);
         } else if (equipment != null) {
-          print('🔍 Calling getExercisesByEquipment for: $equipment');
+          debugPrint('🔍 Calling getExercisesByEquipment for: $equipment');
           exercises = await _apiClient.getExercisesByEquipment(equipment, limit: limit);
         } else {
-          print('🔍 Calling getAllExercises with search: $searchQuery');
+          debugPrint('🔍 Calling getAllExercises with search: $searchQuery');
           exercises = await _apiClient.getAllExercises(
             search: searchQuery, 
             limit: limit,
           );
         }
         
-        print('✅ API Success! Got ${exercises.length} exercises'); // Debug
+        debugPrint('✅ API Success! Got ${exercises.length} exercises'); // Debug
       } catch (apiError) {
-        print('❌ API call failed: $apiError');
-        throw apiError; // Re-throw to be caught by outer catch block
+        debugPrint('❌ API call failed: $apiError');
+        rethrow; // Re-throw to be caught by outer catch block
       }
       
       // Cache the results
@@ -105,7 +106,7 @@ class ExerciseService {
       return filteredExercises.take(limit).toList();
       
     } catch (e) {
-      print('❌ API failed, trying final fallbacks: $e'); // Debug
+      debugPrint('❌ API failed, trying final fallbacks: $e'); // Debug
       
       // Strategy 3: Try cached data as fallback
       final cachedExercises = await _database.getCachedExercises(
@@ -114,7 +115,7 @@ class ExerciseService {
       );
       
       if (cachedExercises.isNotEmpty) {
-        print('✅ Using ${cachedExercises.length} cached exercises as fallback'); // Debug
+        debugPrint('✅ Using ${cachedExercises.length} cached exercises as fallback'); // Debug
         _sortByPopularity(cachedExercises);
         return cachedExercises.take(limit).toList();
       }
@@ -132,14 +133,14 @@ class ExerciseService {
         }
         
         if (commonExercises.isNotEmpty) {
-          print('✅ Using ${commonExercises.length} exercises from common database as final fallback'); // Debug
+          debugPrint('✅ Using ${commonExercises.length} exercises from common database as final fallback'); // Debug
           return commonExercises.take(limit).toList();
         }
       } catch (commonError) {
-        print('⚠️ Common database also failed: $commonError'); // Debug
+        debugPrint('⚠️ Common database also failed: $commonError'); // Debug
       }
       
-      print('📝 Using mock data as ultimate fallback'); // Debug
+      debugPrint('📝 Using mock data as ultimate fallback'); // Debug
       // Ultimate fallback: return comprehensive mock data
       return _getMockExercises(bodyPart: bodyPart, limit: limit);
     }
@@ -175,7 +176,7 @@ class ExerciseService {
       if (!forceRefresh) {
         final commonBodyParts = await _commonService.getBodyParts();
         if (commonBodyParts.isNotEmpty) {
-          print('✅ Found ${commonBodyParts.length} body parts from common database'); // Debug
+          debugPrint('✅ Found ${commonBodyParts.length} body parts from common database'); // Debug
           return commonBodyParts;
         }
       }
@@ -202,7 +203,7 @@ class ExerciseService {
           return commonBodyParts;
         }
       } catch (commonError) {
-        print('⚠️ Common database also failed for body parts: $commonError'); // Debug
+        debugPrint('⚠️ Common database also failed for body parts: $commonError'); // Debug
       }
       
       // Ultimate fallback: return default body parts
@@ -246,11 +247,11 @@ class ExerciseService {
       );
       
       if (cachedExercises.isNotEmpty) {
-        print('✅ Using cached search results for "$query"');
+        debugPrint('✅ Using cached search results for "$query"');
         return cachedExercises;
       }
 
-      print('🔍 Searching API for "$query"...'); // Debug
+      debugPrint('🔍 Searching API for "$query"...'); // Debug
       
       // Use new fuzzy search API
       final exercises = await _apiClient.searchExercises(
@@ -265,7 +266,7 @@ class ExerciseService {
       return exercises;
       
     } catch (e) {
-      print('❌ Search API failed, trying local fallback: $e'); // Debug
+      debugPrint('❌ Search API failed, trying local fallback: $e'); // Debug
       
       // Fallback: search through mock data
       final allExercises = _getMockExercises(limit: 200);

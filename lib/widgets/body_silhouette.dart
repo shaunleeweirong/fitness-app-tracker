@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// Interactive body silhouette widget for muscle group selection
 /// Provides visual body part filtering for exercise selection
@@ -50,47 +49,45 @@ class _BodySilhouetteState extends State<BodySilhouette> {
             const SizedBox(height: 20),
             
             // Body Silhouette
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
+            IntrinsicWidth(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                 // Front View
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        'FRONT',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: const Color(0xFFFFB74D),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
+                Column(
+                  children: [
+                    Text(
+                      'FRONT',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFFFFB74D),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
                       ),
-                      const SizedBox(height: 12),
-                      _buildFrontView(),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFrontView(),
+                  ],
                 ),
                 
-                const SizedBox(width: 40),
+                const SizedBox(width: 12),
                 
                 // Back View  
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        'BACK',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: const Color(0xFFFFB74D),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
+                Column(
+                  children: [
+                    Text(
+                      'BACK',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFFFFB74D),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
                       ),
-                      const SizedBox(height: 12),
-                      _buildBackView(),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildBackView(),
+                  ],
                 ),
               ],
+              ),
             ),
             
             const SizedBox(height: 20),
@@ -122,23 +119,28 @@ class _BodySilhouetteState extends State<BodySilhouette> {
   }
 
   Widget _buildFrontView() {
-    return SizedBox(
-      width: 120,
-      height: 280,
-      child: Stack(
+    return UnconstrainedBox(
+      child: SizedBox(
+        width: 149,
+        height: 285,
+        child: Stack(
         children: [
-          // SVG Body Silhouette
-          SvgPicture.asset(
-            'assets/images/body_silhouette_front.svg',
-            width: 120,
-            height: 280,
-            fit: BoxFit.contain,
+          // PNG Body Silhouette
+          Transform(
+            transform: Matrix4.diagonal3Values(1.8, 1.3, 1.0),
+            alignment: Alignment.center,
+            child: Image.asset(
+              'assets/images/body_silhouette_front.png',
+              width: 149,
+              height: 285,
+              fit: BoxFit.fill,
+            ),
           ),
           
           // Highlight overlay for selected body part
           if (widget.selectedBodyPart != null || _hoveredBodyPart != null)
             CustomPaint(
-              size: const Size(120, 280),
+              size: const Size(149, 285),
               painter: BodyHighlightPainter(
                 isBackView: false,
                 selectedBodyPart: widget.selectedBodyPart,
@@ -149,28 +151,34 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           // Clickable regions for front view
           ..._buildFrontClickableRegions(),
         ],
+        ),
       ),
     );
   }
 
   Widget _buildBackView() {
-    return SizedBox(
-      width: 120,
-      height: 280,
-      child: Stack(
+    return UnconstrainedBox(
+      child: SizedBox(
+        width: 149,
+        height: 285,
+        child: Stack(
         children: [
-          // SVG Body Silhouette
-          SvgPicture.asset(
-            'assets/images/body_silhouette_back.svg',
-            width: 120,
-            height: 280,
-            fit: BoxFit.contain,
+          // PNG Body Silhouette
+          Transform(
+            transform: Matrix4.diagonal3Values(1.8, 1.3, 1.0),
+            alignment: Alignment.center,
+            child: Image.asset(
+              'assets/images/body_silhouette_back.png',
+              width: 149,
+              height: 285,
+              fit: BoxFit.fill,
+            ),
           ),
           
           // Highlight overlay for selected body part
           if (widget.selectedBodyPart != null || _hoveredBodyPart != null)
             CustomPaint(
-              size: const Size(120, 280),
+              size: const Size(149, 285),
               painter: BodyHighlightPainter(
                 isBackView: true,
                 selectedBodyPart: widget.selectedBodyPart,
@@ -181,6 +189,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           // Clickable regions for back view
           ..._buildBackClickableRegions(),
         ],
+        ),
       ),
     );
   }
@@ -190,99 +199,99 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Chest
       _buildClickableRegion(
         bodyPart: 'chest',
-        left: 32,
-        top: 60,
-        width: 56,
-        height: 35,
+        left: 35,
+        top: 68,
+        width: 61,
+        height: 39,
       ),
       
       // Shoulders (front delts)
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 18,
-        top: 46,
-        width: 16,
-        height: 28,
+        left: 20,
+        top: 52,
+        width: 18,
+        height: 32,
       ),
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 86,
-        top: 46,
-        width: 16,
-        height: 28,
+        left: 97,
+        top: 52,
+        width: 18,
+        height: 32,
       ),
       
       // Upper Arms (biceps)
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 12,
-        top: 70,
-        width: 12,
-        height: 36,
+        left: 14,
+        top: 79,
+        width: 14,
+        height: 41,
       ),
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 96,
-        top: 70,
-        width: 12,
-        height: 36,
+        left: 108,
+        top: 79,
+        width: 14,
+        height: 41,
       ),
       
       // Lower Arms (forearms)
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 11,
-        top: 100,
-        width: 8,
-        height: 30,
+        left: 12,
+        top: 113,
+        width: 9,
+        height: 34,
       ),
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 101,
-        top: 100,
-        width: 8,
-        height: 30,
+        left: 113,
+        top: 113,
+        width: 9,
+        height: 34,
       ),
       
       // Waist (abs)
       _buildClickableRegion(
         bodyPart: 'waist',
-        left: 35,
-        top: 95,
-        width: 50,
-        height: 55,
+        left: 39,
+        top: 107,
+        width: 56,
+        height: 62,
       ),
       
       // Upper Legs (quads)
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 42,
-        top: 160,
-        width: 16,
-        height: 50,
+        left: 47,
+        top: 180,
+        width: 18,
+        height: 56,
       ),
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 62,
-        top: 160,
-        width: 16,
-        height: 50,
+        left: 70,
+        top: 180,
+        width: 18,
+        height: 56,
       ),
       
       // Lower Legs (calves)
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 42,
-        top: 215,
-        width: 12,
-        height: 40,
+        left: 47,
+        top: 242,
+        width: 14,
+        height: 45,
       ),
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 66,
-        top: 215,
-        width: 12,
-        height: 40,
+        left: 74,
+        top: 242,
+        width: 14,
+        height: 45,
       ),
     ];
   }
@@ -292,90 +301,90 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Back (upper back)
       _buildClickableRegion(
         bodyPart: 'back',
-        left: 32,
-        top: 60,
-        width: 56,
-        height: 45,
+        left: 36,
+        top: 68,
+        width: 63,
+        height: 50,
       ),
       
       // Shoulders (rear delts)
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 18,
-        top: 46,
-        width: 16,
-        height: 28,
+        left: 20,
+        top: 52,
+        width: 18,
+        height: 32,
       ),
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 86,
-        top: 46,
-        width: 16,
-        height: 28,
+        left: 97,
+        top: 52,
+        width: 18,
+        height: 32,
       ),
       
       // Upper Arms (triceps)
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 12,
-        top: 70,
-        width: 12,
-        height: 36,
+        left: 14,
+        top: 79,
+        width: 14,
+        height: 41,
       ),
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 96,
-        top: 70,
-        width: 12,
-        height: 36,
+        left: 108,
+        top: 79,
+        width: 14,
+        height: 41,
       ),
       
       // Lower Arms (forearms back)
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 11,
-        top: 100,
-        width: 8,
-        height: 30,
+        left: 12,
+        top: 113,
+        width: 9,
+        height: 34,
       ),
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 101,
-        top: 100,
-        width: 8,
-        height: 30,
+        left: 113,
+        top: 113,
+        width: 9,
+        height: 34,
       ),
       
       // Upper Legs (glutes/hamstrings)
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 42,
-        top: 160,
-        width: 16,
-        height: 50,
+        left: 47,
+        top: 180,
+        width: 18,
+        height: 56,
       ),
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 62,
-        top: 160,
-        width: 16,
-        height: 50,
+        left: 70,
+        top: 180,
+        width: 18,
+        height: 56,
       ),
       
       // Lower Legs (calves back)
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 42,
-        top: 215,
-        width: 12,
-        height: 40,
+        left: 47,
+        top: 242,
+        width: 14,
+        height: 45,
       ),
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 66,
-        top: 215,
-        width: 12,
-        height: 40,
+        left: 74,
+        top: 242,
+        width: 14,
+        height: 45,
       ),
     ];
   }

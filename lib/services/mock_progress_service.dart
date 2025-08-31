@@ -280,12 +280,10 @@ class MockProgressService {
     
     for (final bodyPart in bodyParts) {
       double totalBodyPartVolume = 0;
-      int workoutCount = 0;
       
       for (final session in sessions) {
         if (session.bodyPartVolumeMap.containsKey(bodyPart)) {
           totalBodyPartVolume += session.bodyPartVolumeMap[bodyPart]!;
-          workoutCount++;
         }
       }
       

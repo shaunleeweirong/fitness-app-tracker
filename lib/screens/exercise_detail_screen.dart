@@ -68,7 +68,7 @@ class ExerciseDetailScreen extends StatelessWidget {
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -80,7 +80,7 @@ class ExerciseDetailScreen extends StatelessWidget {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.favorite_border, color: Colors.white),
@@ -126,7 +126,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
               ),
@@ -146,7 +146,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withOpacity(0.8),
+                          color: Colors.black.withValues(alpha: 0.8),
                           blurRadius: 4,
                         ),
                       ],
@@ -160,7 +160,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withOpacity(0.8),
+                          color: Colors.black.withValues(alpha: 0.8),
                           blurRadius: 4,
                         ),
                       ],
@@ -311,9 +311,9 @@ class ExerciseDetailScreen extends StatelessWidget {
           children: muscles.map((muscle) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.3)),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Text(
               muscle,
@@ -357,7 +357,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A2A),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFFB74D).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFFFFB74D).withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -446,7 +446,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -494,7 +494,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            )).toList(),
+            )),
           ],
         ),
       ),
@@ -529,7 +529,7 @@ class ExerciseDetailScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A2A),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   variation,
@@ -554,7 +554,7 @@ class ExerciseDetailScreen extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              // TODO: Add to workout functionality
+              // TODO: Phase 1D - Add to workout functionality (Basic Workout Logging)
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Add to workout functionality coming soon!')),
               );
@@ -572,7 +572,7 @@ class ExerciseDetailScreen extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () {
-                  // TODO: Add to favorites functionality
+                  // TODO: Phase 2+ - Add to favorites functionality (User experience enhancement)
                 },
                 icon: const Icon(Icons.favorite_border),
                 label: const Text('FAVORITE'),
@@ -587,7 +587,7 @@ class ExerciseDetailScreen extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () {
-                  // TODO: Share functionality
+                  // TODO: Phase 2+ - Share functionality (Social features)
                 },
                 icon: const Icon(Icons.share),
                 label: const Text('SHARE'),

@@ -6,7 +6,7 @@ import 'lib/models/exercise.dart';
 /// Script to extract 20 most common exercises per body part from ExerciseDB API
 /// Generates common_exercises_database.json for immediate app integration
 void main() async {
-  print('🚀 Starting common exercise extraction...');
+  stdout.writeln('🚀 Starting common exercise extraction...');
   
   final extractor = CommonExerciseExtractor();
   await extractor.extractAllExercises();
@@ -27,6 +27,9 @@ class CommonExerciseExtractor {
     'lower legs': 40,   // 8% - Calves, smaller muscle group
     'lower arms': 30,   // 6% - Forearms, grip work
   };
+  
+  // Default constructor
+  CommonExerciseExtractor();
   
   // Equipment priority (higher priority = more common)
   final Map<String, int> equipmentPriority = {
@@ -94,25 +97,25 @@ class CommonExerciseExtractor {
   Future<void> extractAllExercises() async {
     final Map<String, List<Exercise>> allExercises = {};
     
-    print('📊 Extracting exercises for ${bodyPartLimits.length} body parts...\n');
-    print('🎯 Target: ${bodyPartLimits.values.reduce((a, b) => a + b)} total exercises\n');
+    stdout.writeln('📊 Extracting exercises for ${bodyPartLimits.length} body parts...\n');
+    stdout.writeln('🎯 Target: ${bodyPartLimits.values.reduce((a, b) => a + b)} total exercises\n');
     
     // Extract exercises for each body part
     for (final bodyPart in bodyPartLimits.keys) {
-      print('🔍 Processing: ${bodyPart.toUpperCase()}');
+      stdout.writeln('🔍 Processing: ${bodyPart.toUpperCase()}');
       
       try {
         final exercises = await _extractExercisesForBodyPart(bodyPart);
         allExercises[bodyPart] = exercises;
         
-        print('✅ Extracted ${exercises.length} exercises for $bodyPart');
-        print('   Top 3: ${exercises.take(3).map((e) => e.name).join(', ')}\n');
+        stdout.writeln('✅ Extracted ${exercises.length} exercises for $bodyPart');
+        stdout.writeln('   Top 3: ${exercises.take(3).map((e) => e.name).join(', ')}\n');
         
         // Small delay to avoid overwhelming API
         await Future.delayed(const Duration(milliseconds: 200));
         
       } catch (e) {
-        print('❌ Failed to extract exercises for $bodyPart: $e\n');
+        stdout.writeln('❌ Failed to extract exercises for $bodyPart: $e\n');
         allExercises[bodyPart] = [];
       }
     }
@@ -132,7 +135,7 @@ class CommonExerciseExtractor {
     final maxNeeded = (targetCount * 3).clamp(100, 500); // Fetch 3x target for better selection
     int currentOffset = 0;
     
-    print('   📥 Fetching up to $maxNeeded exercises for selection...');
+    stdout.writeln('   📥 Fetching up to $maxNeeded exercises for selection...');
     
     while (allExercises.length < maxNeeded) {
       final limit = (maxNeeded - allExercises.length).clamp(1, 100); // Max 100 per request
@@ -149,7 +152,7 @@ class CommonExerciseExtractor {
         allExercises.addAll(batch);
         currentOffset += batch.length;
         
-        print('   📄 Fetched ${batch.length} exercises (total: ${allExercises.length})');
+        stdout.writeln('   📄 Fetched ${batch.length} exercises (total: ${allExercises.length})');
         
         // Small delay between API calls to be respectful
         if (allExercises.length < maxNeeded) {
@@ -157,17 +160,17 @@ class CommonExerciseExtractor {
         }
         
       } catch (e) {
-        print('   ⚠️  Error fetching batch at offset $currentOffset: $e');
+        stdout.writeln('   ⚠️  Error fetching batch at offset $currentOffset: $e');
         break;
       }
     }
     
     if (allExercises.isEmpty) {
-      print('⚠️  No exercises found for $bodyPart');
+      stdout.writeln('⚠️  No exercises found for $bodyPart');
       return [];
     }
     
-    print('   ✅ Total fetched: ${allExercises.length} exercises');
+    stdout.writeln('   ✅ Total fetched: ${allExercises.length} exercises');
     
     // Apply selection criteria and rank exercises
     final rankedExercises = _rankExercisesByCommonness(allExercises);
@@ -175,7 +178,7 @@ class CommonExerciseExtractor {
     // Return target number of most common exercises
     final selectedExercises = rankedExercises.take(targetCount).toList();
     
-    print('   🎯 Selected ${selectedExercises.length} common exercises');
+    stdout.writeln('   🎯 Selected ${selectedExercises.length} common exercises');
     
     return selectedExercises;
   }
@@ -272,8 +275,11 @@ class CommonExerciseExtractor {
     
     // Penalty for overly long names (usually indicates complexity)
     final wordCount = name.split(' ').length;
-    if (wordCount > 5) score -= 2.0;
-    else if (wordCount > 3) score -= 1.0;
+    if (wordCount > 5) {
+      score -= 2.0;
+    } else if (wordCount > 3) {
+      score -= 1.0;
+    }
     
     return score.clamp(0.0, 10.0);
   }
@@ -288,18 +294,22 @@ class CommonExerciseExtractor {
     // Bonus for targeting major muscle groups
     final targets = exercise.targetMuscles.join(' ').toLowerCase();
     if (targets.contains('pectorals') || targets.contains('latissimus') || 
-        targets.contains('quadriceps') || targets.contains('glutes')) score += 3.0;
+        targets.contains('quadriceps') || targets.contains('glutes')) {
+      score += 3.0;
+    }
     
     // Bonus for fundamental movement patterns
     final name = exercise.name.toLowerCase();
     if (name.contains('squat') || name.contains('deadlift') || 
-        name.contains('press') || name.contains('row')) score += 2.0;
+        name.contains('press') || name.contains('row')) {
+      score += 2.0;
+    }
     
     return score.clamp(0.0, 20.0);
   }
 
   Future<void> _generateOutputFile(Map<String, List<Exercise>> allExercises) async {
-    print('📝 Generating common_exercises_database.json...');
+    stdout.writeln('📝 Generating common_exercises_database.json...');
     
     // Calculate totals
     int totalExercises = 0;
@@ -355,8 +365,8 @@ class CommonExerciseExtractor {
       const JsonEncoder.withIndent('  ').convert(output)
     );
     
-    print('✅ Generated common_exercises_database.json');
-    print('   📁 File size: ${await _getFileSize(file)}');
+    stdout.writeln('✅ Generated common_exercises_database.json');
+    stdout.writeln('   📁 File size: ${await _getFileSize(file)}');
   }
 
   Future<String> _getFileSize(File file) async {
@@ -367,8 +377,8 @@ class CommonExerciseExtractor {
   }
 
   void _printExtractionSummary(Map<String, List<Exercise>> allExercises) {
-    print('\n🎉 EXTRACTION COMPLETE!');
-    print('=' * 50);
+    stdout.writeln('\n🎉 EXTRACTION COMPLETE!');
+    stdout.writeln('=' * 50);
     
     int totalExercises = 0;
     int targetTotal = 0;
@@ -381,21 +391,21 @@ class CommonExerciseExtractor {
       targetTotal += target;
       
       final status = count >= target ? '✅' : count > 0 ? '⚠️' : '❌';
-      print('$status $bodyPart: $count/$target exercises');
+      stdout.writeln('$status $bodyPart: $count/$target exercises');
       
       if (exercises.isNotEmpty && exercises.length >= 3) {
-        print('   Top exercises: ${exercises.take(3).map((e) => e.name).join(', ')}');
+        stdout.writeln('   Top exercises: ${exercises.take(3).map((e) => e.name).join(', ')}');
       }
     }
     
-    print('\n📊 SUMMARY');
-    print('Total exercises: $totalExercises');
-    print('Target: $targetTotal exercises');
-    print('Success rate: ${((totalExercises / targetTotal) * 100).toStringAsFixed(1)}%');
-    print('File size estimate: ~${(totalExercises * 1.8).toStringAsFixed(0)}KB');
+    stdout.writeln('\n📊 SUMMARY');
+    stdout.writeln('Total exercises: $totalExercises');
+    stdout.writeln('Target: $targetTotal exercises');
+    stdout.writeln('Success rate: ${((totalExercises / targetTotal) * 100).toStringAsFixed(1)}%');
+    stdout.writeln('File size estimate: ~${(totalExercises * 1.8).toStringAsFixed(0)}KB');
     
-    print('\n📁 OUTPUT');
-    print('File: common_exercises_database.json');
-    print('Ready for Flutter app integration with 500-exercise database!');
+    stdout.writeln('\n📁 OUTPUT');
+    stdout.writeln('File: common_exercises_database.json');
+    stdout.writeln('Ready for Flutter app integration with 500-exercise database!');
   }
 }

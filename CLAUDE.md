@@ -27,8 +27,10 @@ A Flutter mobile app designed for weight lifters of all experience levels to tra
 - ✅ **Exercise Database Enhancement completed:** 483 premium exercises with equipment-focused popular badges
 - ✅ **Phase 1C completed:** Professional Exercise Database with Visual Body Part Selection
 - ✅ **Popular Badge System completed:** Equipment-prioritized Tier 1 exercise highlighting
-- ⏳ **Currently on:** Ready for Phase 1D
-- 🔄 **Next:** Phase 1D - Basic Workout Logging
+- ✅ **Body Silhouette Recovery completed:** Restored functional silhouettes after layout constraint errors
+- ✅ **Body Silhouette Size Enhancement completed:** Asymmetric scaling solution implemented with perfect width/height balance
+- ⏳ **Currently on:** Phase 1D - Basic Workout Logging preparation
+- 🔄 **Next:** Build workout customization interface with time selection and body part targeting
 
 ---
 
@@ -104,6 +106,60 @@ A Flutter mobile app designed for weight lifters of all experience levels to tra
 - `lib/main.dart`: Popular badge UI component and detection logic
 - `lib/services/common_exercise_service.dart`: Local database popular detection and sorting
 - `lib/services/exercise_service.dart`: API integration popular detection and sorting
+
+### Body Silhouette Size Enhancement ✅
+**Status:** ✅ **COMPLETED**  
+**Goal:** Increase body silhouette display size for better user interaction and visual clarity
+
+#### Final Solution: Asymmetric Transform Scaling ✅
+**Root Cause Discovered:** The issue was not Flutter layout constraints, but the PNG files themselves containing thin silhouette artwork (1080×1350 aspect ratio = 0.8, making them naturally tall and narrow).
+
+**Successful Solution:** `Transform` with `Matrix4.diagonal3Values()` for asymmetric scaling
+```dart
+Transform(
+  transform: Matrix4.diagonal3Values(1.8, 1.3, 1.0), // X=1.8x, Y=1.3x, Z=1.0x
+  alignment: Alignment.center,
+  child: Image.asset(
+    'assets/images/body_silhouette_front.png',
+    width: 149,
+    height: 285,
+    fit: BoxFit.fill,
+  ),
+)
+```
+
+#### Implementation Results ✅
+- **Width Enhancement**: 1.8x scaling provides excellent visual width, making silhouettes much more interactive
+- **Height Optimization**: 1.3x scaling maintains proportions without excessive height
+- **Visual Balance**: Perfect balance between width prominence and appropriate height
+- **No Layout Errors**: Transform scaling is purely visual, no constraint violations
+- **Maintained Functionality**: All clickable regions and muscle highlighting work perfectly
+- **User Experience**: Silhouettes now visually prominent and easy to interact with
+
+#### Technical Implementation
+**Files Modified:**
+- `lib/widgets/body_silhouette.dart` lines 129-137 (front view)
+- `lib/widgets/body_silhouette.dart` lines 167-175 (back view)
+
+**Key Technical Details:**
+- **Matrix4.diagonal3Values(1.8, 1.3, 1.0)**: Asymmetric scaling (width=1.8x, height=1.3x)
+- **alignment: Alignment.center**: Ensures proper scaling from center point
+- **BoxFit.fill**: Maintains exact container dimensions before scaling
+- **No clickable region adjustments needed**: Transform only affects visual rendering
+
+#### Failed Approaches & Lessons Learned ❌
+1. **Container Constraint Modifications** (FAILED): OverflowBox, IntrinsicWidth, Flexible widgets
+2. **Layout Restructuring** (FAILED): Row alignment changes, SizedBox modifications
+3. **Uniform Transform.scale** (PARTIALLY SUCCESSFUL): scale: 1.8 provided good width but excessive height
+
+#### Success Criteria Achieved ✅
+- [x] ✅ Body silhouettes visible and functional 
+- [x] ✅ Silhouettes display with excellent visual prominence and interactivity
+- [x] ✅ No layout constraint errors or warnings
+- [x] ✅ Interactive muscle selection working perfectly at scaled size
+- [x] ✅ Responsive behavior maintained across screen interactions
+
+**Final Result:** Body silhouettes now provide optimal user experience with perfect visual balance and full interactive functionality.
 
 ---
 

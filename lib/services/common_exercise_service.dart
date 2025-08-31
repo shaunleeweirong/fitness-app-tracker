@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/exercise.dart';
 
@@ -21,7 +22,7 @@ class CommonExerciseService {
     if (_database != null) return; // Already initialized
     
     try {
-      print('🔄 Loading common exercise database...');
+      debugPrint('🔄 Loading common exercise database...');
       final String jsonString = await rootBundle.loadString(_assetPath);
       _database = jsonDecode(jsonString);
       
@@ -30,12 +31,12 @@ class CommonExerciseService {
       final totalExercises = _allExercises?.length ?? 0;
       final bodyPartCount = _exercisesByBodyPart?.length ?? 0;
       
-      print('✅ Common exercise database loaded successfully');
-      print('   📊 Total exercises: $totalExercises');
-      print('   🎯 Body parts covered: $bodyPartCount');
+      debugPrint('✅ Common exercise database loaded successfully');
+      debugPrint('   📊 Total exercises: $totalExercises');
+      debugPrint('   🎯 Body parts covered: $bodyPartCount');
       
     } catch (e) {
-      print('❌ Failed to load common exercise database: $e');
+      debugPrint('❌ Failed to load common exercise database: $e');
       _initializeEmptyDatabase();
     }
   }
@@ -127,15 +128,21 @@ class CommonExerciseService {
       
       // Search in target muscles
       if (exercise.targetMuscles.any((muscle) => 
-          muscle.toLowerCase().contains(queryLower))) return true;
+          muscle.toLowerCase().contains(queryLower))) {
+        return true;
+      }
       
       // Search in equipment
       if (exercise.equipments.any((equipment) => 
-          equipment.toLowerCase().contains(queryLower))) return true;
+          equipment.toLowerCase().contains(queryLower))) {
+        return true;
+      }
       
       // Search in keywords if available
       if (exercise.keywords?.any((keyword) => 
-          keyword.toLowerCase().contains(queryLower)) == true) return true;
+          keyword.toLowerCase().contains(queryLower)) == true) {
+        return true;
+      }
       
       return false;
     }).toList();

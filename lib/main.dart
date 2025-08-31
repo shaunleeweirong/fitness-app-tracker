@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'models/exercise.dart';
-import 'models/user_progress.dart';
 import 'services/exercise_service.dart';
 import 'services/mock_progress_service.dart';
 import 'screens/exercise_detail_screen.dart';
@@ -25,9 +24,8 @@ class FitnessTrackerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFFFB74D), // Warmer orange/yellow accent
           brightness: Brightness.dark,
-          background: const Color(0xFF0A0A0A), // Deeper black background
           surface: const Color(0xFF1A1A1A), // Rich dark surface
-          surfaceVariant: const Color(0xFF2A2A2A), // Elevated surface
+          surfaceContainerHighest: const Color(0xFF2A2A2A), // Elevated surface
         ),
         scaffoldBackgroundColor: const Color(0xFF0A0A0A),
         // Large tap targets for workout environment
@@ -166,7 +164,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -179,7 +177,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           selectedItemColor: const Color(0xFFFFB74D),
-          unselectedItemColor: Colors.white.withOpacity(0.6),
+          unselectedItemColor: Colors.white.withValues(alpha: 0.6),
           selectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -289,7 +287,7 @@ class DashboardScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -449,7 +447,7 @@ class DashboardScreen extends StatelessWidget {
                             Icon(
                               Icons.fitness_center_outlined,
                               size: 48,
-                              color: Colors.white.withOpacity(0.3),
+                              color: Colors.white.withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -497,42 +495,6 @@ class DashboardScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.white70,
               fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildStatCard(BuildContext context, String value, String label, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF2A2A2A),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: color,
-              fontSize: 28,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white70,
-              height: 1.3,
             ),
           ),
         ],
@@ -732,8 +694,8 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
       ),
     );
     
-    // Also print to console for debugging
-    print('🚨 ERROR: $message');
+    // Also debug print to console for debugging
+    debugPrint('🚨 ERROR: $message');
   }
 
   @override
@@ -919,11 +881,11 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                             });
                             _loadExercisesByBodyPart(null);
                           },
-                          child: const Text('CLEAR SELECTION'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white70,
                             side: const BorderSide(color: Color(0xFF2A2A2A)),
                           ),
+                          child: const Text('CLEAR SELECTION'),
                         ),
                       ),
                     ],
@@ -1233,7 +1195,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 2,
                             offset: const Offset(0, 1),
                           ),
