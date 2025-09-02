@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
 import 'models/exercise.dart';
+import 'models/workout.dart';
 import 'services/exercise_service.dart';
 import 'services/mock_progress_service.dart';
+import 'services/workout_recommendation_service.dart';
 import 'screens/exercise_detail_screen.dart';
+import 'screens/workout_setup_screen.dart';
+import 'screens/workout_logging_screen.dart';
+import 'screens/workout_history_screen.dart';
+import 'screens/workout_plans_screen.dart';
 import 'widgets/body_silhouette.dart';
 import 'widgets/progress_overview_widget.dart';
 import 'widgets/enhanced_stats_row.dart';
 
 void main() {
   runApp(const FitnessTrackerApp());
+}
+
+extension StringCapitalize on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return this[0].toUpperCase() + substring(1);
+  }
 }
 
 class FitnessTrackerApp extends StatelessWidget {
@@ -119,6 +132,17 @@ class FitnessTrackerApp extends StatelessWidget {
         ),
       ),
       home: const MainNavigationScreen(),
+      routes: {
+        '/workout-logging': (context) {
+          final workoutId = ModalRoute.of(context)?.settings.arguments as String?;
+          if (workoutId == null) {
+            return const Scaffold(
+              body: Center(child: Text('Error: No workout ID provided')),
+            );
+          }
+          return WorkoutLoggingScreen(workoutId: workoutId);
+        },
+      },
       debugShowCheckedModeBanner: false,
     );
   }
@@ -136,10 +160,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     const DashboardScreen(),
-    const WorkoutScreen(),
+    const WorkoutHistoryScreen(),
+    const WorkoutPlansScreen(),
     const ExerciseLibraryScreen(),
     const ProgressScreen(),
-    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -147,6 +171,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _selectedIndex = index;
     });
   }
+
+  void onItemTapped(int index) => _onItemTapped(index);
 
   @override
   Widget build(BuildContext context) {
@@ -195,22 +221,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.fitness_center_outlined),
               activeIcon: Icon(Icons.fitness_center),
-              label: 'Workout',
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bookmark_outline),
+              activeIcon: Icon(Icons.bookmark),
+              label: 'Plans',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.library_books_outlined),
               activeIcon: Icon(Icons.library_books),
-              label: 'Library',
+              label: 'Exercises',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.trending_up_outlined),
               activeIcon: Icon(Icons.trending_up),
               label: 'Progress',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
             ),
           ],
         ),
@@ -220,8 +246,51 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // Dashboard Screen
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final WorkoutRecommendationService _recommendationService = WorkoutRecommendationService();
+  WorkoutTemplate? _recommendedWorkout;
+  bool _isLoadingRecommendation = true;
+  String _recommendationReason = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecommendation();
+  }
+
+  @override
+  void dispose() {
+    _recommendationService.close();
+    super.dispose();
+  }
+
+  Future<void> _loadRecommendation() async {
+    try {
+      final recommendation = await _recommendationService.getTodaysRecommendation();
+      if (mounted) {
+        setState(() {
+          _recommendedWorkout = recommendation;
+          _recommendationReason = recommendation != null 
+              ? _recommendationService.getRecommendationReason(recommendation)
+              : '';
+          _isLoadingRecommendation = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingRecommendation = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -272,97 +341,7 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 
                 // Featured Workout Card
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF2A2A2A),
-                        Color(0xFF1A1A1A),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Badge and title section
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFB74D),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'TODAY\'S WORKOUT',
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          const Icon(
-                            Icons.favorite_border,
-                            color: Colors.white60,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      Text(
-                        '25 min Upper Body',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Workout metadata
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: [
-                          _buildMetadataChip(context, '25 min', Icons.timer_outlined),
-                          _buildMetadataChip(context, 'Upper Body', Icons.fitness_center),
-                          _buildMetadataChip(context, 'Intermediate', Icons.trending_up),
-                          _buildMetadataChip(context, 'Dumbbells', Icons.sports_gymnastics),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Start button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.play_arrow, size: 20),
-                          label: const Text('START WORKOUT'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildWorkoutRecommendationCard(context),
                 
                 const SizedBox(height: 24),
                 
@@ -396,18 +375,28 @@ class DashboardScreen extends StatelessWidget {
                           Expanded(
                             child: _buildQuickActionCard(
                               context,
-                              'Log Workout',
+                              'Create Workout',
                               Icons.add_circle_outline,
-                              () {},
+                              () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const WorkoutSetupScreen(),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildQuickActionCard(
                               context,
-                              'View Progress',
-                              Icons.trending_up,
-                              () {},
+                              'View History',
+                              Icons.history,
+                              () {
+                                // Navigate to workout history (tab index 1)
+                                final mainState = context.findAncestorStateOfType<_MainNavigationScreenState>();
+                                mainState?.onItemTapped(1);
+                              },
                             ),
                           ),
                         ],
@@ -501,6 +490,321 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildWorkoutRecommendationCard(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF2A2A2A),
+            Color(0xFF1A1A1A),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _isLoadingRecommendation
+          ? _buildLoadingWorkoutCard(context)
+          : _buildRecommendationContent(context),
+    );
+  }
+
+  Widget _buildLoadingWorkoutCard(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Loading badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFB74D),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'LOADING RECOMMENDATION...',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Loading shimmer effect
+        Container(
+          height: 32,
+          width: 200,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Loading chips
+        Row(
+          children: [
+            Container(
+              height: 24,
+              width: 60,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              height: 24,
+              width: 80,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        
+        // Loading buttons
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendationContent(BuildContext context) {
+    if (_recommendedWorkout == null) {
+      return _buildFallbackContent(context);
+    }
+
+    final workout = _recommendedWorkout!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Badge and title section
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB74D),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'TODAY\'S RECOMMENDATION',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              workout.isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: workout.isFavorite ? Colors.red : Colors.white60,
+              size: 20,
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        
+        Text(
+          workout.name,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: Colors.white,
+            height: 1.2,
+          ),
+        ),
+        
+        const SizedBox(height: 8),
+        
+        if (_recommendationReason.isNotEmpty) ...[
+          Text(
+            _recommendationReason,
+            style: const TextStyle(
+              color: Color(0xFFFFB74D),
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        // Workout metadata
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            _buildMetadataChip(context, '${workout.estimatedDurationMinutes ?? 45} min', Icons.timer_outlined),
+            _buildMetadataChip(context, workout.targetBodyParts.isNotEmpty ? workout.targetBodyParts.first.capitalize() : 'Mixed', Icons.fitness_center),
+            _buildMetadataChip(context, workout.difficultyName, Icons.trending_up),
+            _buildMetadataChip(context, '${workout.exercises.length} exercises', Icons.list),
+          ],
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Action buttons row
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutSetupScreen(template: workout),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.play_arrow, size: 20),
+                label: const Text('START THIS WORKOUT'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const WorkoutPlansScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.bookmark, size: 20),
+                label: const Text('CHOOSE DIFFERENT'),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFFB74D)),
+                  foregroundColor: const Color(0xFFFFB74D),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFallbackContent(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFB74D),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'READY TO WORKOUT?',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        Text(
+          'Create Your Workout',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: Colors.white,
+            height: 1.2,
+          ),
+        ),
+        
+        const SizedBox(height: 8),
+        
+        const Text(
+          'Start building your fitness journey with a custom workout',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Action buttons row
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const WorkoutSetupScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add, size: 20),
+                label: const Text('CREATE WORKOUT'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const WorkoutPlansScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.bookmark, size: 20),
+                label: const Text('BROWSE PLANS'),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFFB74D)),
+                  foregroundColor: const Color(0xFFFFB74D),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
   
   Widget _buildQuickActionCard(BuildContext context, String title, IconData icon, VoidCallback onTap) {
     return GestureDetector(
@@ -525,42 +829,6 @@ class DashboardScreen extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Workout Screen
-class WorkoutScreen extends StatelessWidget {
-  const WorkoutScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Start Workout'),
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.fitness_center,
-              size: 64,
-              color: Colors.orange,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Workout Screen',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Coming in Phase 1D',
-              style: TextStyle(fontSize: 16),
             ),
           ],
         ),
@@ -730,49 +998,77 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Text(
-            'Exercise Library',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Body silhouette toggle
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showBodySilhouette = !_showBodySilhouette;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _showBodySilhouette 
-                      ? const Color(0xFFFFB74D) 
-                      : const Color(0xFF2A2A2A),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.accessibility_new, 
-                    size: 24,
-                    color: _showBodySilhouette 
-                      ? Colors.black 
-                      : Colors.white,
-                  ),
-                ),
+              Text(
+                'Exercise Library',
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.tune, size: 24),
+              Row(
+                children: [
+                  // Body silhouette toggle
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showBodySilhouette = !_showBodySilhouette;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _showBodySilhouette 
+                          ? const Color(0xFFFFB74D) 
+                          : const Color(0xFF2A2A2A),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.accessibility_new, 
+                        size: 24,
+                        color: _showBodySilhouette 
+                          ? Colors.black 
+                          : Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.tune, size: 24),
+                  ),
+                ],
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          // Create Workout Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const WorkoutSetupScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text('Create Workout'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB74D),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1289,13 +1585,6 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
   }
 }
 
-// Extension for string capitalization
-extension StringExtension on String {
-  String capitalize() {
-    if (isEmpty) return this;
-    return this[0].toUpperCase() + substring(1).toLowerCase();
-  }
-}
 
 // Progress Screen
 class ProgressScreen extends StatelessWidget {

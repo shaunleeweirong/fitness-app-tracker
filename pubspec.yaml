@@ -52,6 +52,9 @@ dependencies:
   
   # Charts for progress visualization
   fl_chart: ^0.69.0
+  
+  # Audio for timer notifications
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +70,9 @@ dev_dependencies:
   # JSON code generation
   json_serializable: ^6.7.1
   build_runner: ^2.4.7
+  
+  # SQLite testing support
+  sqflite_common_ffi: ^2.3.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -83,6 +89,7 @@ flutter:
   assets:
     - assets/data/common_exercises_database.json
     - assets/images/
+    - assets/audio/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
