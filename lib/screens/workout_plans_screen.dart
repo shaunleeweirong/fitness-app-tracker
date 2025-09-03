@@ -581,10 +581,6 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
                                 _buildInfoChip(template.categoryName, Colors.blue),
                                 const SizedBox(width: 8),
                                 _buildInfoChip(template.difficultyName, _getDifficultyColor(template.difficulty)),
-                                if (template.usageCount > 0) ...[
-                                  const SizedBox(width: 8),
-                                  _buildInfoChip('${template.usageCount}x used', Colors.green),
-                                ],
                               ],
                             ),
                           ),
@@ -662,13 +658,6 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
                       const SizedBox(width: 4),
                       Text(
                         '${template.estimatedDurationMinutes ?? 45} min',
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.category, size: 16, color: Colors.white.withOpacity(0.7)),
-                      const SizedBox(width: 4),
-                      Text(
-                        template.targetBodyParts.join(', '),
                         style: const TextStyle(color: Colors.white60, fontSize: 12),
                       ),
                     ],

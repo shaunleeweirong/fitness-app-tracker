@@ -677,9 +677,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 20),
         
         // Action buttons row
-        Row(
+        Column(
           children: [
-            Expanded(
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
@@ -695,8 +696,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
@@ -706,7 +708,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 },
                 icon: const Icon(Icons.bookmark, size: 20),
-                label: const Text('CHOOSE DIFFERENT'),
+                label: const Text('CHOOSE DIFFERENT WORKOUT'),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFFFFB74D)),
                   foregroundColor: const Color(0xFFFFB74D),
