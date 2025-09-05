@@ -17,8 +17,10 @@ WorkoutSession _$WorkoutSessionFromJson(Map<String, dynamic> json) =>
       exerciseSets: (json['exerciseSets'] as List<dynamic>)
           .map((e) => ExerciseSet.fromJson(e as Map<String, dynamic>))
           .toList(),
-      bodyPartVolumeMap: (json['bodyPartVolumeMap'] as Map<String, dynamic>)
-          .map((k, e) => MapEntry(k, (e as num).toDouble())),
+      bodyPartVolumeMap:
+          (json['bodyPartVolumeMap'] as Map<String, dynamic>).map(
+        (k, e) => MapEntry(k, (e as num).toDouble()),
+      ),
       totalVolume: (json['totalVolume'] as num).toDouble(),
       duration: Duration(microseconds: (json['duration'] as num).toInt()),
       isCompleted: json['isCompleted'] as bool,
@@ -40,20 +42,19 @@ Map<String, dynamic> _$WorkoutSessionToJson(WorkoutSession instance) =>
     };
 
 ExerciseSet _$ExerciseSetFromJson(Map<String, dynamic> json) => ExerciseSet(
-  exerciseId: json['exerciseId'] as String,
-  exerciseName: json['exerciseName'] as String,
-  bodyParts: (json['bodyParts'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
-  weight: (json['weight'] as num).toDouble(),
-  reps: (json['reps'] as num).toInt(),
-  setNumber: (json['setNumber'] as num).toInt(),
-  timestamp: DateTime.parse(json['timestamp'] as String),
-  restTime: json['restTime'] == null
-      ? null
-      : Duration(microseconds: (json['restTime'] as num).toInt()),
-  notes: json['notes'] as String?,
-);
+      exerciseId: json['exerciseId'] as String,
+      exerciseName: json['exerciseName'] as String,
+      bodyParts:
+          (json['bodyParts'] as List<dynamic>).map((e) => e as String).toList(),
+      weight: (json['weight'] as num).toDouble(),
+      reps: (json['reps'] as num).toInt(),
+      setNumber: (json['setNumber'] as num).toInt(),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      restTime: json['restTime'] == null
+          ? null
+          : Duration(microseconds: (json['restTime'] as num).toInt()),
+      notes: json['notes'] as String?,
+    );
 
 Map<String, dynamic> _$ExerciseSetToJson(ExerciseSet instance) =>
     <String, dynamic>{

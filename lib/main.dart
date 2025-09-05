@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'models/exercise.dart';
 import 'models/workout.dart';
+import 'models/user_progress.dart';
+import 'models/progress_dashboard_data.dart';
 import 'services/exercise_service.dart';
 import 'services/mock_progress_service.dart';
 import 'services/workout_recommendation_service.dart';
+import 'services/progress_service.dart';
 import 'screens/exercise_detail_screen.dart';
 import 'screens/workout_setup_screen.dart';
 import 'screens/workout_logging_screen.dart';
@@ -1588,38 +1591,855 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
 }
 
 
-// Progress Screen
-class ProgressScreen extends StatelessWidget {
+// Progress Screen  
+class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
+
+  @override
+  State<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends State<ProgressScreen> {
+  late ProgressService _progressService;
+  ProgressDashboardData? _progressData;
+  ProgressLoadingState _loadingState = ProgressLoadingState.idle;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _progressService = ProgressService();
+    _loadProgressData();
+  }
+
+  @override
+  void dispose() {
+    _progressService.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProgressData() async {
+    setState(() {
+      _loadingState = ProgressLoadingState.loading;
+      _errorMessage = null;
+    });
+
+    final result = await _progressService.getProgressData();
+    
+    setState(() {
+      _loadingState = result.state;
+      _progressData = result.data;
+      _errorMessage = result.errorMessage;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Progress'),
+        title: const Text('📈 Progress'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: const Center(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF0A0A0A),
+              Color(0xFF1A1A1A),
+            ],
+          ),
+        ),
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_loadingState) {
+      case ProgressLoadingState.loading:
+        return _buildLoadingView();
+      case ProgressLoadingState.error:
+        return _buildErrorView();
+      case ProgressLoadingState.success:
+        return _progressData != null 
+            ? _buildProgressDashboard(_progressData!)
+            : _buildEmptyState();
+      case ProgressLoadingState.idle:
+      default:
+        return _buildLoadingView();
+    }
+  }
+
+  Widget _buildLoadingView() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFB74D)),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Loading your progress...',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.trending_up,
+            const Icon(
+              Icons.error_outline,
               size: 64,
-              color: Colors.orange,
+              color: Colors.redAccent,
             ),
-            SizedBox(height: 16),
-            Text(
-              'Progress Tracking',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            const SizedBox(height: 16),
+            const Text(
+              'Error Loading Progress',
+              style: TextStyle(
+                fontSize: 24, 
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Coming in Phase 1G',
-              style: TextStyle(fontSize: 16),
+              _errorMessage ?? 'Unknown error occurred',
+              style: const TextStyle(fontSize: 16, color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadProgressData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB74D),
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Retry'),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.fitness_center_outlined,
+              size: 64,
+              color: Colors.white54,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No Progress Yet',
+              style: TextStyle(
+                fontSize: 24, 
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Complete your first workout to see your progress!',
+              style: TextStyle(fontSize: 16, color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressDashboard(ProgressDashboardData data) {
+    return RefreshIndicator(
+      onRefresh: _loadProgressData,
+      color: const Color(0xFFFFB74D),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Lifetime Stats Card
+            _buildLifetimeStatsCard(data),
+            
+            const SizedBox(height: 20),
+            
+            // Weekly Progress (existing functionality)
+            ProgressOverviewWidget(userProgress: MockProgressService.getMockProgress()),
+            
+            const SizedBox(height: 20),
+            
+            // Body Part Progress Visualization (NEW)
+            _buildBodyProgressSection(data),
+            
+            const SizedBox(height: 20),
+            
+            // Achievements Section
+            _buildAchievementsSection(data),
+            
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLifetimeStatsCard(ProgressDashboardData data) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF2A2A2A),
+            Color(0xFF1A1A1A),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFB74D).withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          const Row(
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                color: Color(0xFFFFB74D),
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'LIFETIME TOTALS',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFFB74D),
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Stats Grid
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.4, // Final adjustment to eliminate remaining 4.7px overflow
+            mainAxisSpacing: 12, // Reduced spacing to fit better
+            crossAxisSpacing: 12,
+            children: [
+              _buildStatTile(
+                icon: Icons.fitness_center,
+                label: 'Workouts',
+                value: data.totalWorkouts.toString(),
+                color: const Color(0xFF4CAF50),
+              ),
+              _buildStatTile(
+                icon: Icons.schedule,
+                label: 'Time',
+                value: data.formattedTotalTime,
+                color: const Color(0xFF2196F3),
+              ),
+              _buildStatTile(
+                icon: Icons.trending_up,
+                label: 'Volume',
+                value: data.formattedTotalVolume,
+                color: const Color(0xFFFFB74D),
+              ),
+              _buildStatTile(
+                icon: Icons.local_fire_department,
+                label: 'Streak',
+                value: '${data.currentStreak} days',
+                color: const Color(0xFFFF5722),
+              ),
+              _buildStatTile(
+                icon: Icons.emoji_events,
+                label: 'Achievements',
+                value: data.totalAchievements.toString(),
+                color: const Color(0xFF9C27B0),
+              ),
+              _buildStatTile(
+                icon: Icons.data_usage,
+                label: 'Sets',
+                value: data.totalSets.toString(),
+                color: const Color(0xFF607D8B),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 22, // Increased for better visibility
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 17, // Increased for better readability
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12, // Improved for better readability
+              color: Colors.white70,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsSection(ProgressDashboardData data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.emoji_events_outlined,
+                color: Color(0xFFFFB74D),
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Recent Achievements',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        data.recentAchievements.isNotEmpty
+            ? ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: data.recentAchievements.length,
+                itemBuilder: (context, index) {
+                  final achievement = data.recentAchievements[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFFFB74D).withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFB74D).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.emoji_events,
+                            color: Color(0xFFFFB74D),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                achievement.title,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                achievement.description,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '+${achievement.xpReward} XP',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFFB74D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              )
+            : Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A2A2A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.emoji_events_outlined,
+                      size: 48,
+                      color: Colors.white54,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No achievements yet',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Complete workouts to unlock achievements!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white54,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+      ],
+    );
+  }
+
+  /// Build body part progress visualization with level badges and heat mapping
+  Widget _buildBodyProgressSection(ProgressDashboardData data) {
+    // Convert BodyPartProgress map to level map for BodySilhouette
+    final bodyPartLevels = <String, int>{};
+    for (final entry in data.bodyPartProgress.entries) {
+      bodyPartLevels[entry.key] = entry.value.level;
+    }
+
+    // Debug logging
+    print('DEBUG: bodyPartProgress entries: ${data.bodyPartProgress.length}');
+    print('DEBUG: bodyPartLevels: $bodyPartLevels');
+    
+    // Add mock data for testing if no real data exists
+    if (bodyPartLevels.isEmpty) {
+      bodyPartLevels.addAll({
+        'chest': 8,
+        'shoulders': 12,
+        'upper arms': 6,
+        'lower arms': 4,
+        'back': 15,
+        'waist': 3,
+        'upper legs': 10,
+        'lower legs': 5,
+      });
+      print('DEBUG: Added mock body part levels: $bodyPartLevels');
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF2A2A2A),
+            Color(0xFF1A1A1A),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFB74D).withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            const Row(
+              children: [
+                Icon(
+                  Icons.accessibility_new,
+                color: Color(0xFFFFB74D),
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'MUSCLE GROUP PROGRESS',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFFB74D),
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Body silhouette with level badges
+          if (bodyPartLevels.isNotEmpty)
+            Center(
+              child: BodySilhouette(
+                selectedBodyPart: null, // No selection for progress view
+                onBodyPartSelected: (bodyPart) {
+                  // Handle tap to show detailed progress for this body part
+                  _showBodyPartDetails(bodyPart, data.bodyPartProgress[bodyPart]);
+                },
+                showLevelBadges: true,
+                bodyPartLevels: bodyPartLevels,
+              ),
+            )
+          else
+            // Empty state
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.accessibility_new_outlined,
+                    size: 48,
+                    color: Colors.white54,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No progress data yet',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Complete workouts to see muscle group progress!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white54,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+
+          // Level legend
+          if (bodyPartLevels.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _buildLevelLegend(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Build level legend showing color coding
+  Widget _buildLevelLegend() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Level Badges',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _buildLegendItem('1-4', const Color(0xFF4CAF50), 'Beginner'),
+              _buildLegendItem('5-9', const Color(0xFF2196F3), 'Intermediate'),
+              _buildLegendItem('10-14', const Color(0xFF9C27B0), 'Advanced'),
+              _buildLegendItem('15-19', const Color(0xFFE91E63), 'Expert'),
+              _buildLegendItem('20+', const Color(0xFFFFD700), 'Master'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual legend item
+  Widget _buildLegendItem(String levelRange, Color color, String title) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$levelRange ($title)',
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.white70,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Show detailed progress for a specific body part
+  void _showBodyPartDetails(String bodyPart, BodyPartProgress? progress) {
+    // Handle mock data case - create temporary progress for demo
+    if (progress == null) {
+      // Create mock progress data for demonstration
+      final mockLevels = {'chest': 8, 'shoulders': 12, 'upper arms': 6, 'lower arms': 4, 'back': 15, 'waist': 3, 'upper legs': 10, 'lower legs': 5};
+      final level = mockLevels[bodyPart] ?? 1;
+      
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white54,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Body part title
+              Text(
+                bodyPart.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFFB74D),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Mock progress details
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildDetailStat('Level', level.toString()),
+                  _buildDetailStat('XP', '${level * 1500}'), // Mock XP calculation
+                  _buildDetailStat('Progress', '${(level % 10) * 10}%'), // Mock progress
+                ],
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Close button
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white54,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Body part title
+            Text(
+              bodyPart.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFFB74D),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Progress details
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildDetailStat('Level', progress.level.toString()),
+                _buildDetailStat('XP', progress.xp.toInt().toString()),
+                _buildDetailStat('Progress', '${(progress.progressPercentage * 100).toInt()}%'),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Close button
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build detail stat widget
+  Widget _buildDetailStat(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.white70,
+          ),
+        ),
+      ],
     );
   }
 }

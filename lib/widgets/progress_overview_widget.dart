@@ -47,14 +47,17 @@ class ProgressOverviewWidget extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Weekly Volume Progress',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+              Flexible(
+                child: Text(
+                  'Weekly Volume Progress',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(

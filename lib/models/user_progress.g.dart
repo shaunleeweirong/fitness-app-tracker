@@ -7,25 +7,26 @@ part of 'user_progress.dart';
 // **************************************************************************
 
 UserProgress _$UserProgressFromJson(Map<String, dynamic> json) => UserProgress(
-  userId: json['userId'] as String,
-  lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-  currentStats: ProgressStats.fromJson(
-    json['currentStats'] as Map<String, dynamic>,
-  ),
-  dailyProgress: (json['dailyProgress'] as List<dynamic>)
-      .map((e) => DailyProgress.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  bodyPartProgress: (json['bodyPartProgress'] as Map<String, dynamic>).map(
-    (k, e) => MapEntry(k, BodyPartProgress.fromJson(e as Map<String, dynamic>)),
-  ),
-  achievements: (json['achievements'] as List<dynamic>)
-      .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  streakData: StreakData.fromJson(json['streakData'] as Map<String, dynamic>),
-  milestones: (json['milestones'] as List<dynamic>)
-      .map((e) => Milestone.fromJson(e as Map<String, dynamic>))
-      .toList(),
-);
+      userId: json['userId'] as String,
+      lastUpdated: DateTime.parse(json['lastUpdated'] as String),
+      currentStats:
+          ProgressStats.fromJson(json['currentStats'] as Map<String, dynamic>),
+      dailyProgress: (json['dailyProgress'] as List<dynamic>)
+          .map((e) => DailyProgress.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      bodyPartProgress: (json['bodyPartProgress'] as Map<String, dynamic>).map(
+        (k, e) =>
+            MapEntry(k, BodyPartProgress.fromJson(e as Map<String, dynamic>)),
+      ),
+      achievements: (json['achievements'] as List<dynamic>)
+          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      streakData:
+          StreakData.fromJson(json['streakData'] as Map<String, dynamic>),
+      milestones: (json['milestones'] as List<dynamic>)
+          .map((e) => Milestone.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
 
 Map<String, dynamic> _$UserProgressToJson(UserProgress instance) =>
     <String, dynamic>{
@@ -42,9 +43,8 @@ Map<String, dynamic> _$UserProgressToJson(UserProgress instance) =>
 ProgressStats _$ProgressStatsFromJson(Map<String, dynamic> json) =>
     ProgressStats(
       totalWorkouts: (json['totalWorkouts'] as num).toInt(),
-      totalTimeExercised: Duration(
-        microseconds: (json['totalTimeExercised'] as num).toInt(),
-      ),
+      totalTimeExercised:
+          Duration(microseconds: (json['totalTimeExercised'] as num).toInt()),
       totalVolumeLifted: (json['totalVolumeLifted'] as num).toDouble(),
       totalSets: (json['totalSets'] as num).toInt(),
       lastWorkoutDate: json['lastWorkoutDate'] == null
@@ -104,12 +104,12 @@ Map<String, dynamic> _$BodyPartProgressToJson(BodyPartProgress instance) =>
     };
 
 StreakData _$StreakDataFromJson(Map<String, dynamic> json) => StreakData(
-  currentStreak: (json['currentStreak'] as num).toInt(),
-  longestStreak: (json['longestStreak'] as num).toInt(),
-  lastWorkoutDate: json['lastWorkoutDate'] == null
-      ? null
-      : DateTime.parse(json['lastWorkoutDate'] as String),
-);
+      currentStreak: (json['currentStreak'] as num).toInt(),
+      longestStreak: (json['longestStreak'] as num).toInt(),
+      lastWorkoutDate: json['lastWorkoutDate'] == null
+          ? null
+          : DateTime.parse(json['lastWorkoutDate'] as String),
+    );
 
 Map<String, dynamic> _$StreakDataToJson(StreakData instance) =>
     <String, dynamic>{
@@ -119,13 +119,13 @@ Map<String, dynamic> _$StreakDataToJson(StreakData instance) =>
     };
 
 Achievement _$AchievementFromJson(Map<String, dynamic> json) => Achievement(
-  id: json['id'] as String,
-  title: json['title'] as String,
-  description: json['description'] as String,
-  iconName: json['iconName'] as String,
-  dateEarned: DateTime.parse(json['dateEarned'] as String),
-  xpReward: (json['xpReward'] as num).toInt(),
-);
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      iconName: json['iconName'] as String,
+      dateEarned: DateTime.parse(json['dateEarned'] as String),
+      xpReward: (json['xpReward'] as num).toInt(),
+    );
 
 Map<String, dynamic> _$AchievementToJson(Achievement instance) =>
     <String, dynamic>{
@@ -138,28 +138,28 @@ Map<String, dynamic> _$AchievementToJson(Achievement instance) =>
     };
 
 Milestone _$MilestoneFromJson(Map<String, dynamic> json) => Milestone(
-  id: json['id'] as String,
-  title: json['title'] as String,
-  description: json['description'] as String,
-  targetValue: (json['targetValue'] as num).toDouble(),
-  currentValue: (json['currentValue'] as num).toDouble(),
-  valueType: json['valueType'] as String,
-  isCompleted: json['isCompleted'] as bool,
-  completedDate: json['completedDate'] == null
-      ? null
-      : DateTime.parse(json['completedDate'] as String),
-);
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      targetValue: (json['targetValue'] as num).toDouble(),
+      currentValue: (json['currentValue'] as num).toDouble(),
+      valueType: json['valueType'] as String,
+      isCompleted: json['isCompleted'] as bool,
+      completedDate: json['completedDate'] == null
+          ? null
+          : DateTime.parse(json['completedDate'] as String),
+    );
 
 Map<String, dynamic> _$MilestoneToJson(Milestone instance) => <String, dynamic>{
-  'id': instance.id,
-  'title': instance.title,
-  'description': instance.description,
-  'targetValue': instance.targetValue,
-  'currentValue': instance.currentValue,
-  'valueType': instance.valueType,
-  'isCompleted': instance.isCompleted,
-  'completedDate': instance.completedDate?.toIso8601String(),
-};
+      'id': instance.id,
+      'title': instance.title,
+      'description': instance.description,
+      'targetValue': instance.targetValue,
+      'currentValue': instance.currentValue,
+      'valueType': instance.valueType,
+      'isCompleted': instance.isCompleted,
+      'completedDate': instance.completedDate?.toIso8601String(),
+    };
 
 ProgressComparison _$ProgressComparisonFromJson(Map<String, dynamic> json) =>
     ProgressComparison(

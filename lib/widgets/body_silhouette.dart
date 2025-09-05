@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 
 /// Interactive body silhouette widget for muscle group selection
 /// Provides visual body part filtering for exercise selection
+/// Enhanced with level badge overlay system for progress visualization
 class BodySilhouette extends StatefulWidget {
   final String? selectedBodyPart;
   final Function(String bodyPart) onBodyPartSelected;
   final bool showLabels;
+  final Map<String, int>? bodyPartLevels; // New: Body part level data
+  final bool showLevelBadges; // New: Toggle level badge display
 
   const BodySilhouette({
     super.key,
     this.selectedBodyPart,
     required this.onBodyPartSelected,
     this.showLabels = false,
+    this.bodyPartLevels,
+    this.showLevelBadges = false,
   });
 
   @override
@@ -48,46 +53,44 @@ class _BodySilhouetteState extends State<BodySilhouette> {
             ),
             const SizedBox(height: 20),
             
-            // Body Silhouette
-            IntrinsicWidth(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+            // Body Silhouette with level badges
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 // Front View
                 Column(
                   children: [
                     Text(
                       'FRONT',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFFFFB74D),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFFFFB74D),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildFrontView(),
-                  ],
-                ),
+                      const SizedBox(height: 12),
+                      _buildFrontView(),
+                    ],
+                  ),
                 
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 
                 // Back View  
                 Column(
                   children: [
                     Text(
                       'BACK',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFFFFB74D),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                      ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFFFFB74D),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
                     ),
                     const SizedBox(height: 12),
                     _buildBackView(),
                   ],
                 ),
               ],
-              ),
             ),
             
             const SizedBox(height: 20),
@@ -150,6 +153,10 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           
           // Clickable regions for front view
           ..._buildFrontClickableRegions(),
+          
+          // Level badges for front view
+          if (widget.showLevelBadges && widget.bodyPartLevels != null)
+            ..._buildFrontLevelBadges(),
         ],
         ),
       ),
@@ -188,6 +195,10 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           
           // Clickable regions for back view
           ..._buildBackClickableRegions(),
+          
+          // Level badges for back view
+          if (widget.showLevelBadges && widget.bodyPartLevels != null)
+            ..._buildBackLevelBadges(),
         ],
         ),
       ),
@@ -442,6 +453,141 @@ class _BodySilhouetteState extends State<BodySilhouette> {
                 ),
               )
             : null,
+        ),
+      ),
+    );
+  }
+
+  /// Build level badge overlays for front view
+  List<Widget> _buildFrontLevelBadges() {
+    return [
+      // Chest level badge
+      _buildLevelBadge('chest', 65, 52),
+      
+      // Shoulders level badges (show one badge for both shoulders)
+      _buildLevelBadge('shoulders', 30, 35),
+      
+      // Upper arms level badges (show one badge for both arms)
+      _buildLevelBadge('upper arms', 10, 65),
+      
+      // Lower arms level badge
+      _buildLevelBadge('lower arms', 6, 95),
+      
+      // Waist (abs) level badge
+      _buildLevelBadge('waist', 65, 125),
+      
+      // Upper legs level badge
+      _buildLevelBadge('upper legs', 75, 165),
+      
+      // Lower legs level badge
+      _buildLevelBadge('lower legs', 75, 220),
+    ];
+  }
+
+  /// Build level badge overlays for back view
+  List<Widget> _buildBackLevelBadges() {
+    return [
+      // Back level badge
+      _buildLevelBadge('back', 65, 52),
+      
+      // Shoulders level badges (show one badge for both shoulders)
+      _buildLevelBadge('shoulders', 30, 35),
+      
+      // Upper arms level badges (show one badge for both arms)
+      _buildLevelBadge('upper arms', 10, 65),
+      
+      // Lower arms level badge
+      _buildLevelBadge('lower arms', 6, 95),
+      
+      // Upper legs level badge (glutes/hamstrings)
+      _buildLevelBadge('upper legs', 75, 165),
+      
+      // Lower legs level badge
+      _buildLevelBadge('lower legs', 75, 220),
+    ];
+  }
+
+  /// Build individual level badge widget
+  Widget _buildLevelBadge(String bodyPart, double left, double top) {
+    final level = widget.bodyPartLevels?[bodyPart];
+    if (level == null || level <= 0) return const SizedBox.shrink();
+    
+    // Level-based colors and styling
+    Color badgeColor;
+    Color textColor = Colors.white;
+    IconData? badgeIcon;
+    
+    if (level >= 20) {
+      badgeColor = const Color(0xFFFFD700); // Gold
+      textColor = Colors.black;
+      badgeIcon = Icons.star;
+    } else if (level >= 15) {
+      badgeColor = const Color(0xFFE91E63); // Pink
+      badgeIcon = Icons.diamond;
+    } else if (level >= 10) {
+      badgeColor = const Color(0xFF9C27B0); // Purple
+      badgeIcon = Icons.military_tech;
+    } else if (level >= 5) {
+      badgeColor = const Color(0xFF2196F3); // Blue
+      badgeIcon = Icons.shield;
+    } else {
+      badgeColor = const Color(0xFF4CAF50); // Green
+      badgeIcon = Icons.fitness_center;
+    }
+    
+    return Positioned(
+      left: left,
+      top: top,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: badgeColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Background icon
+            if (badgeIcon != null)
+              Positioned.fill(
+                child: Icon(
+                  badgeIcon,
+                  size: 14,
+                  color: textColor.withOpacity(0.3),
+                ),
+              ),
+            // Level text
+            Positioned.fill(
+              child: Center(
+                child: Text(
+                  level.toString(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
