@@ -54,43 +54,46 @@ class _BodySilhouetteState extends State<BodySilhouette> {
             const SizedBox(height: 20),
             
             // Body Silhouette with level badges
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Front View
-                Column(
-                  children: [
-                    Text(
-                      'FRONT',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: const Color(0xFFFFB74D),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Front View
+                  Column(
+                    children: [
+                      Text(
+                        'FRONT',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: const Color(0xFFFFB74D),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.2,
+                          ),
                         ),
+                        const SizedBox(height: 12),
+                        _buildFrontView(),
+                      ],
+                    ),
+                  
+                  const SizedBox(width: 8),
+                  
+                  // Back View  
+                  Column(
+                    children: [
+                      Text(
+                        'BACK',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: const Color(0xFFFFB74D),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.2,
+                          ),
                       ),
                       const SizedBox(height: 12),
-                      _buildFrontView(),
+                      _buildBackView(),
                     ],
                   ),
-                
-                const SizedBox(width: 8),
-                
-                // Back View  
-                Column(
-                  children: [
-                    Text(
-                      'BACK',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: const Color(0xFFFFB74D),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildBackView(),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
             
             const SizedBox(height: 20),
@@ -122,11 +125,10 @@ class _BodySilhouetteState extends State<BodySilhouette> {
   }
 
   Widget _buildFrontView() {
-    return UnconstrainedBox(
-      child: SizedBox(
-        width: 149,
-        height: 285,
-        child: Stack(
+    return Container(
+      width: 149,
+      height: 285,
+      child: Stack(
         children: [
           // PNG Body Silhouette
           Transform(
@@ -158,17 +160,15 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           if (widget.showLevelBadges && widget.bodyPartLevels != null)
             ..._buildFrontLevelBadges(),
         ],
-        ),
       ),
     );
   }
 
   Widget _buildBackView() {
-    return UnconstrainedBox(
-      child: SizedBox(
-        width: 149,
-        height: 285,
-        child: Stack(
+    return Container(
+      width: 149,
+      height: 285,
+      child: Stack(
         children: [
           // PNG Body Silhouette
           Transform(
@@ -200,7 +200,6 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           if (widget.showLevelBadges && widget.bodyPartLevels != null)
             ..._buildBackLevelBadges(),
         ],
-        ),
       ),
     );
   }
