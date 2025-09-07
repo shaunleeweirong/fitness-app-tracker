@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../widgets/body_silhouette.dart';
 import '../models/workout.dart';
 import '../services/workout_repository.dart';
@@ -130,11 +131,17 @@ class _WorkoutSetupScreenState extends State<WorkoutSetupScreen> {
       Workout workout;
       
       if (_isFromTemplate && widget.template != null) {
+        debugPrint('🎯 Creating workout from template: ${widget.template!.name}');
+        
         // Convert template to workout
         workout = widget.template!.toWorkout(
           userId: userId,
           customName: _nameController.text.isNotEmpty ? _nameController.text : null,
         );
+        
+        debugPrint('🔧 Applying user customizations...');
+        debugPrint('  Target body parts: $_targetBodyParts');
+        debugPrint('  Duration: $_selectedDuration minutes');
         
         // Update with user customizations
         workout = workout.copyWith(
@@ -142,6 +149,8 @@ class _WorkoutSetupScreenState extends State<WorkoutSetupScreen> {
           plannedDurationMinutes: _selectedDuration,
           createdAt: DateTime.now(),
         );
+        
+        debugPrint('✅ Final workout has ${workout.exercises.length} exercises');
       } else {
         // Create workout from scratch
         workout = Workout(

@@ -724,6 +724,54 @@ class ExerciseService {
     return false;
   }
 
+  /// Get exercises by list of exercise IDs
+  /// Used for loading template exercises specifically
+  Future<List<Exercise>> getExercisesByIds(List<String> exerciseIds) async {
+    if (exerciseIds.isEmpty) return [];
+    
+    debugPrint('🔍 ExerciseService.getExercisesByIds called with ${exerciseIds.length} IDs'); // Debug
+    
+    List<Exercise> exercises = [];
+    
+    // First, try to get exercises from common database
+    try {
+      final commonExercises = await _commonService.getAllExercises();
+      final commonExerciseMap = {for (var ex in commonExercises) ex.exerciseId: ex};
+      
+      for (final id in exerciseIds) {
+        final exercise = commonExerciseMap[id];
+        if (exercise != null) {
+          exercises.add(exercise);
+        }
+      }
+      
+      if (exercises.length == exerciseIds.length) {
+        debugPrint('✅ Found all ${exercises.length} exercises from common database'); // Debug
+        return exercises;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Common database unavailable for exercise IDs: $e'); // Debug
+    }
+    
+    // If not all found in common database, try individual API calls for missing ones
+    final foundIds = exercises.map((e) => e.exerciseId).toSet();
+    final missingIds = exerciseIds.where((id) => !foundIds.contains(id)).toList();
+    
+    for (final exerciseId in missingIds) {
+      try {
+        final exercise = await getExerciseById(exerciseId);
+        if (exercise != null) {
+          exercises.add(exercise);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to get exercise with ID: $exerciseId, error: $e'); // Debug
+      }
+    }
+    
+    debugPrint('✅ Found ${exercises.length}/${exerciseIds.length} exercises by ID'); // Debug
+    return exercises;
+  }
+
   /// Dispose resources
   void dispose() {
     _apiClient.dispose();

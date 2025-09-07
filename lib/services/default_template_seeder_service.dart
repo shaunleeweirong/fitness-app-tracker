@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/workout.dart';
 import '../models/exercise.dart';
 import '../services/workout_template_repository.dart';
@@ -51,9 +52,13 @@ class DefaultTemplateSeederService {
     ];
 
     // Save all templates
+    debugPrint('💾 Saving ${templates.length} templates to database...');
     for (final template in templates) {
+      debugPrint('💾 Saving template: ${template.name} with ${template.exercises.length} exercises');
       await _templateRepository.saveTemplate(template);
+      debugPrint('✅ Template saved: ${template.name}');
     }
+    debugPrint('🎉 All default templates saved successfully!');
   }
 
   /// Create Chest Focus template
@@ -98,10 +103,19 @@ class DefaultTemplateSeederService {
 
   /// Create Back Focus template
   Future<WorkoutTemplate> _createBackTemplate(List<Exercise> allExercises, DateTime now) async {
+    debugPrint('🏗️ Creating Back Builder template...');
+    debugPrint('📊 Total exercises available: ${allExercises.length}');
+    
     final exercises = _selectExercisesByBodyPart(allExercises, ['back'], 6);
+    debugPrint('🎯 Selected ${exercises.length} back exercises:');
+    for (int i = 0; i < exercises.length; i++) {
+      debugPrint('  ${i + 1}. ${exercises[i].name} (ID: ${exercises[i].exerciseId})');
+    }
+    
     final templateExercises = _createTemplateExercises('back_template', exercises);
+    debugPrint('📋 Created ${templateExercises.length} template exercises');
 
-    return WorkoutTemplate(
+    final template = WorkoutTemplate(
       templateId: 'back_template',
       userId: systemUserId,
       name: 'Back Builder',
@@ -114,6 +128,9 @@ class DefaultTemplateSeederService {
       updatedAt: now,
       exercises: templateExercises,
     );
+    
+    debugPrint('✅ Back Builder template created successfully with ${template.exercises.length} exercises');
+    return template;
   }
 
   /// Create Shoulders template

@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter/foundation.dart';
 import '../models/workout.dart';
 import 'database_helper.dart';
 
@@ -9,6 +10,9 @@ class WorkoutRepository {
 
   /// Save a new workout to the database
   Future<String> saveWorkout(Workout workout) async {
+    debugPrint('💾 Saving workout: ${workout.name}');
+    debugPrint('📊 Workout has ${workout.exercises.length} exercises');
+    
     final db = await _dbHelper.database;
     
     await db.transaction((txn) async {
@@ -18,13 +22,17 @@ class WorkoutRepository {
         workout.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+      debugPrint('✅ Workout record saved');
       
       // Insert workout exercises
+      debugPrint('💾 Saving ${workout.exercises.length} workout exercises...');
       for (final exercise in workout.exercises) {
         final exerciseId = _dbHelper.generateWorkoutExerciseId(
           workout.workoutId, 
           exercise.exerciseId
         );
+        
+        debugPrint('  Saving exercise: ${exercise.exerciseName} (ID: ${exercise.exerciseId})');
         
         await txn.insert(
           DatabaseHelper.tableWorkoutExercises,
@@ -43,11 +51,14 @@ class WorkoutRepository {
       }
     });
     
+    debugPrint('🎉 Workout saved successfully: ${workout.workoutId}');
     return workout.workoutId;
   }
 
   /// Load a specific workout by ID with all exercises and sets
   Future<Workout?> getWorkout(String workoutId) async {
+    debugPrint('📥 Loading workout: $workoutId');
+    
     final db = await _dbHelper.database;
     
     // Get main workout record
@@ -58,8 +69,11 @@ class WorkoutRepository {
     );
     
     if (workoutMaps.isEmpty) {
+      debugPrint('❌ Workout not found: $workoutId');
       return null;
     }
+    
+    debugPrint('✅ Workout record found');
     
     // Get workout exercises
     final exerciseMaps = await db.query(
@@ -69,10 +83,15 @@ class WorkoutRepository {
       orderBy: 'order_index ASC',
     );
     
+    debugPrint('📋 Found ${exerciseMaps.length} workout exercises');
+    
     final List<WorkoutExercise> exercises = [];
     
     for (final exerciseMap in exerciseMaps) {
       final exerciseId = exerciseMap['workout_exercise_id'] as String;
+      final exerciseName = exerciseMap['exercise_name'] as String;
+      
+      debugPrint('  Loading exercise: $exerciseName (ID: ${exerciseMap['exercise_id']})');
       
       // Get sets for this exercise
       final setMaps = await db.query(
@@ -87,7 +106,10 @@ class WorkoutRepository {
       exercises.add(exercise);
     }
     
-    return Workout.fromMap(workoutMaps.first, exercises: exercises);
+    final workout = Workout.fromMap(workoutMaps.first, exercises: exercises);
+    debugPrint('🎉 Workout loaded successfully with ${workout.exercises.length} exercises');
+    
+    return workout;
   }
 
   /// Get all workouts for a user, optionally filtered by status
