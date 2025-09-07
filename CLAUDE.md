@@ -29,6 +29,7 @@ A Flutter mobile app designed for weight lifters of all experience levels to tra
 - ✅ **Phase 2:** Navigation Polish & Template Enhancement with advanced filtering, search, and action buttons
 - ✅ **Progress Screen Enhancement:** Enhanced dashboard with layout overflow fixes and visual improvements
 - ✅ **Database Stability:** Fixed connection lifecycle issues with retry logic and proper resource management
+- ✅ **Duplicate Exercise Bug Fix:** Resolved UNIQUE constraint violation by implementing exercise merging logic in workout logging
 - 🎯 **Next:** Phase 1H - Progress Tracking & Visualization
 
 ### 🚀 Technical Architecture Highlights  
@@ -372,6 +373,78 @@ Widget _buildStatTile({...}) {
 - [x] ✅ Enhanced dashboard with progress data models and mock service integration
 
 **Final Result:** Progress screen now displays with professional layout integrity, no overflow errors, and enhanced visual design that matches industry-standard fitness apps.
+
+### Duplicate Exercise Bug Fix ✅
+**Status:** ✅ **COMPLETED**  
+**Goal:** Resolve UNIQUE constraint violation error when adding exercises to template-based workouts
+
+#### Problem Identified ✅
+**Root Cause:** When users selected exercises that already existed in template workouts, the app created duplicate `WorkoutExercise` objects with identical `workout_exercise_id` values, causing SQLite UNIQUE constraint violations.
+
+**Error Sequence:**
+1. Template workout loads with predefined exercises (e.g., "cambered bar lying row")
+2. User selects the same exercise to add sets
+3. App detects duplicate but ignores it and adds as new exercise
+4. Database INSERT fails: `UNIQUE constraint failed: workout_exercises.workout_exercise_id`
+
+#### Solution Implemented ✅
+**Smart Exercise Merging Strategy:**
+1. **Duplicate Detection**: Check if exercise with same `exerciseId` already exists in workout
+2. **Merge Logic**: If duplicate found, add new sets to existing exercise instead of creating new exercise
+3. **Proper Set Numbering**: Continue set numbering from existing sets (e.g., if 2 sets exist, new sets start at 3, 4, 5...)
+4. **In-Place Update**: Replace existing exercise with merged version to maintain single exercise per ID
+
+#### Technical Implementation ✅
+**Files Modified:**
+- `lib/screens/workout_logging_screen.dart`: Enhanced `_saveExercise()` method with duplicate handling logic
+- Added comprehensive debug logging throughout workout flow for future troubleshooting
+
+**Code Logic:**
+```dart
+// Check for duplicate exercises and handle them
+final duplicateExercises = _workout!.exercises.where((we) => we.exerciseId == _selectedExercise!.exerciseId);
+
+if (duplicateExercises.isNotEmpty) {
+  // MERGE: Add new sets to existing exercise
+  final existingExercise = duplicateExercises.first;
+  final newSets = _currentSets.map((set) => set.copyWith(
+    setNumber: existingExercise.sets.length + set.setNumber,
+  )).toList();
+  
+  final mergedExercise = existingExercise.copyWith(
+    sets: [...existingExercise.sets, ...newSets],
+  );
+  
+  // Replace existing exercise in workout
+  updatedExercises = _workout!.exercises.map((we) {
+    if (we.exerciseId == _selectedExercise!.exerciseId) {
+      return mergedExercise;
+    }
+    return we;
+  }).toList();
+  
+} else {
+  // ADD: Normal behavior for new exercises
+  updatedExercises = [..._workout!.exercises, workoutExercise];
+}
+```
+
+#### Debug Logging Added ✅
+**Comprehensive logging across:**
+- `workout_logging_screen.dart`: Exercise selection, set addition, and save operations
+- `workout_repository.dart`: Database transaction details with duplicate detection
+- `database_helper.dart`: Workout exercise ID generation tracking
+- `workout.dart`: Workout state changes with duplicate analysis
+
+#### Results Achieved ✅
+- [x] ✅ Eliminated UNIQUE constraint violations when adding exercises to template workouts
+- [x] ✅ Smart exercise merging provides better user experience (sets get combined vs duplicated)
+- [x] ✅ Proper set numbering maintains logical sequence (1, 2, 3, 4... instead of 1, 1, 2, 2...)
+- [x] ✅ Template and custom workouts both work seamlessly
+- [x] ✅ Comprehensive debug logging enables rapid troubleshooting of future issues
+- [x] ✅ Database integrity maintained with no duplicate workout_exercise_id values
+
+**Final Result:** Users can now add sets to exercises that already exist in template workouts without database errors. The system intelligently merges sets with existing exercises instead of creating problematic duplicates.
 
 ---
 

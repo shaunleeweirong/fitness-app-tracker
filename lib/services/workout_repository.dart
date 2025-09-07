@@ -186,40 +186,105 @@ class WorkoutRepository {
 
   /// Update an existing workout
   Future<void> updateWorkout(Workout workout) async {
-    final db = await _dbHelper.database;
+    debugPrint('🔄 UPDATING WORKOUT: ${workout.name} (ID: ${workout.workoutId})');
+    debugPrint('   Total exercises to save: ${workout.exercises.length}');
     
-    await db.transaction((txn) async {
-      // Update main workout record
-      await txn.update(
-        DatabaseHelper.tableWorkouts,
-        workout.toMap(),
-        where: 'workout_id = ?',
-        whereArgs: [workout.workoutId],
-      );
-      
-      // Delete existing exercises and sets for this workout
-      await _deleteWorkoutExercisesAndSets(txn, workout.workoutId);
-      
-      // Insert updated exercises and sets
-      for (final exercise in workout.exercises) {
-        final exerciseId = _dbHelper.generateWorkoutExerciseId(
-          workout.workoutId, 
-          exercise.exerciseId
-        );
-        
-        await txn.insert(
-          DatabaseHelper.tableWorkoutExercises,
-          exercise.toMap()..['workout_exercise_id'] = exerciseId,
-        );
-        
-        for (final set in exercise.sets) {
-          await txn.insert(
-            DatabaseHelper.tableWorkoutSets,
-            set.toMap(),
-          );
+    // Log all exercises being updated
+    for (int i = 0; i < workout.exercises.length; i++) {
+      final ex = workout.exercises[i];
+      debugPrint('   Exercise ${i + 1}: ${ex.exerciseName} (ID: ${ex.exerciseId}) - ${ex.sets.length} sets');
+    }
+    
+    // Check for duplicate exercise IDs in the workout
+    final exerciseIds = workout.exercises.map((e) => e.exerciseId).toList();
+    final uniqueIds = exerciseIds.toSet();
+    if (exerciseIds.length != uniqueIds.length) {
+      debugPrint('🚨 CRITICAL ERROR: Found duplicate exercise IDs in workout!');
+      final duplicateIds = <String>[];
+      for (final id in exerciseIds) {
+        if (exerciseIds.where((x) => x == id).length > 1 && !duplicateIds.contains(id)) {
+          duplicateIds.add(id);
         }
       }
-    });
+      for (final dupId in duplicateIds) {
+        final count = exerciseIds.where((x) => x == dupId).length;
+        debugPrint('   Duplicate ID "$dupId" appears $count times');
+      }
+    }
+    
+    final db = await _dbHelper.database;
+    
+    try {
+      await db.transaction((txn) async {
+        debugPrint('📝 Starting database transaction...');
+        
+        // Update main workout record
+        debugPrint('📝 Updating main workout record...');
+        await txn.update(
+          DatabaseHelper.tableWorkouts,
+          workout.toMap(),
+          where: 'workout_id = ?',
+          whereArgs: [workout.workoutId],
+        );
+        debugPrint('✅ Main workout record updated');
+        
+        // Delete existing exercises and sets for this workout
+        debugPrint('🗑️  Deleting existing exercises and sets...');
+        await _deleteWorkoutExercisesAndSets(txn, workout.workoutId);
+        debugPrint('✅ Existing exercises and sets deleted');
+        
+        // Insert updated exercises and sets
+        debugPrint('💾 Inserting ${workout.exercises.length} updated exercises...');
+        for (int i = 0; i < workout.exercises.length; i++) {
+          final exercise = workout.exercises[i];
+          final exerciseId = _dbHelper.generateWorkoutExerciseId(
+            workout.workoutId, 
+            exercise.exerciseId
+          );
+          
+          debugPrint('   Inserting exercise ${i + 1}: ${exercise.exerciseName}');
+          debugPrint('     Generated workout_exercise_id: $exerciseId');
+          debugPrint('     Exercise ID: ${exercise.exerciseId}');
+          debugPrint('     Workout ID: ${exercise.workoutId}');
+          
+          try {
+            await txn.insert(
+              DatabaseHelper.tableWorkoutExercises,
+              exercise.toMap()..['workout_exercise_id'] = exerciseId,
+            );
+            debugPrint('     ✅ Exercise inserted successfully');
+            
+            debugPrint('     💾 Inserting ${exercise.sets.length} sets...');
+            for (int j = 0; j < exercise.sets.length; j++) {
+              final set = exercise.sets[j];
+              debugPrint('       Set ${j + 1}: ${set.weight}kg x ${set.reps} (ID: ${set.workoutExerciseId})');
+              
+              await txn.insert(
+                DatabaseHelper.tableWorkoutSets,
+                set.toMap(),
+              );
+              debugPrint('       ✅ Set ${j + 1} inserted');
+            }
+            debugPrint('     ✅ All sets inserted for ${exercise.exerciseName}');
+            
+          } catch (e) {
+            debugPrint('     ❌ FAILED to insert exercise ${exercise.exerciseName}: $e');
+            debugPrint('     📊 Exercise data: ${exercise.toMap()}');
+            rethrow;
+          }
+        }
+        
+        debugPrint('✅ All exercises and sets inserted successfully');
+        debugPrint('✅ Database transaction completed');
+      });
+      
+      debugPrint('🎉 WORKOUT UPDATE COMPLETED: ${workout.name}');
+      
+    } catch (e) {
+      debugPrint('❌ WORKOUT UPDATE FAILED: $e');
+      debugPrint('📊 Failed workout data: ${workout.toMap()}');
+      rethrow;
+    }
   }
 
   /// Delete a workout and all associated data

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import '../models/workout.dart';
 import 'default_template_seeder_service.dart';
 
@@ -362,7 +363,12 @@ class DatabaseHelper {
 
   /// Generate unique workout exercise ID
   String generateWorkoutExerciseId(String workoutId, String exerciseId) {
-    return '${workoutId}_$exerciseId';
+    final generatedId = '${workoutId}_$exerciseId';
+    debugPrint('🔑 GENERATING workout_exercise_id:');
+    debugPrint('   Input workoutId: $workoutId');
+    debugPrint('   Input exerciseId: $exerciseId');  
+    debugPrint('   Generated ID: $generatedId');
+    return generatedId;
   }
 
   /// Generate unique workout template ID

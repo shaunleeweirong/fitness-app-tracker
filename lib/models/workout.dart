@@ -105,6 +105,37 @@ class Workout {
     List<WorkoutExercise>? exercises,
     String? notes,
   }) {
+    // Debug log when exercises are being updated (most critical for UNIQUE constraint issue)
+    if (exercises != null) {
+      debugPrint('📋 WORKOUT COPYWITH: Updating exercises for ${this.name}');
+      debugPrint('   Original exercises: ${this.exercises.length}');
+      debugPrint('   New exercises: ${exercises.length}');
+      
+      // Check for duplicate exercises in the new list
+      final exerciseIds = exercises.map((e) => e.exerciseId).toList();
+      final uniqueIds = exerciseIds.toSet();
+      if (exerciseIds.length != uniqueIds.length) {
+        debugPrint('🚨 CRITICAL: copyWith detected duplicate exercises!');
+        final duplicateIds = <String>[];
+        for (final id in exerciseIds) {
+          if (exerciseIds.where((x) => x == id).length > 1 && !duplicateIds.contains(id)) {
+            duplicateIds.add(id);
+          }
+        }
+        for (final dupId in duplicateIds) {
+          final count = exerciseIds.where((x) => x == dupId).length;
+          debugPrint('   Duplicate exercise ID "$dupId" appears $count times');
+          
+          // Log details of each duplicate
+          final duplicates = exercises.where((e) => e.exerciseId == dupId).toList();
+          for (int i = 0; i < duplicates.length; i++) {
+            final dup = duplicates[i];
+            debugPrint('     Instance ${i + 1}: ${dup.exerciseName} with ${dup.sets.length} sets (orderIndex: ${dup.orderIndex})');
+          }
+        }
+      }
+    }
+    
     return Workout(
       workoutId: workoutId ?? this.workoutId,
       userId: userId ?? this.userId,

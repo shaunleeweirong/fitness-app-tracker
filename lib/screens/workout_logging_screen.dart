@@ -194,19 +194,38 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
   }
 
   void _selectExercise(Exercise exercise) {
+    debugPrint('🎯 EXERCISE SELECTED: ${exercise.name} (ID: ${exercise.exerciseId})');
+    debugPrint('   Body parts: ${exercise.bodyParts}');
+    debugPrint('   Current workout exercises count: ${_workout?.exercises.length ?? 0}');
+    
+    // Check if this exercise is already in the workout
+    final existingExercises = _workout?.exercises.where((we) => we.exerciseId == exercise.exerciseId).toList() ?? [];
+    if (existingExercises.isNotEmpty) {
+      debugPrint('⚠️  WARNING: Exercise ${exercise.name} already exists in workout!');
+      debugPrint('   Existing instances: ${existingExercises.length}');
+      for (int i = 0; i < existingExercises.length; i++) {
+        debugPrint('   Instance ${i + 1}: ${existingExercises[i].exerciseName} with ${existingExercises[i].sets.length} sets');
+      }
+    }
+    
     setState(() {
       _selectedExercise = exercise;
       _currentSets = [];
       _weightController.clear();
       _repsController.clear();
     });
+    
+    debugPrint('✅ Exercise selection completed');
   }
 
   void _addSet() {
+    debugPrint('🏋️ ADDING SET to exercise: ${_selectedExercise?.name}');
+    
     final weightText = _weightController.text.trim();
     final repsText = _repsController.text.trim();
     
     if (weightText.isEmpty || repsText.isEmpty) {
+      debugPrint('❌ Set addition failed: Missing weight or reps');
       _showError('Please enter both weight and reps');
       return;
     }
@@ -215,14 +234,20 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
     final reps = int.tryParse(repsText);
     
     if (weight == null || weight <= 0) {
+      debugPrint('❌ Set addition failed: Invalid weight: $weightText');
       _showError('Please enter a valid weight');
       return;
     }
     
     if (reps == null || reps <= 0) {
+      debugPrint('❌ Set addition failed: Invalid reps: $repsText');
       _showError('Please enter valid reps');
       return;
     }
+    
+    final workoutExerciseId = '${widget.workoutId}_${_selectedExercise!.exerciseId}';
+    debugPrint('🏋️ Creating set with workout_exercise_id: $workoutExerciseId');
+    debugPrint('   Weight: ${weight}kg, Reps: $reps, Set #: ${_currentSets.length + 1}');
     
     setState(() {
       _currentSets.add(
@@ -230,7 +255,7 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
           weight: weight,
           reps: reps,
           setNumber: _currentSets.length + 1,
-          workoutExerciseId: '${widget.workoutId}_${_selectedExercise!.exerciseId}',
+          workoutExerciseId: workoutExerciseId,
         ),
       );
       
@@ -238,6 +263,8 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
       _weightController.clear();
       _repsController.clear();
     });
+    
+    debugPrint('✅ Set added successfully! Current sets: ${_currentSets.length}');
     
     // Haptic feedback for successful set addition
     HapticFeedback.lightImpact();
@@ -263,28 +290,98 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
   }
 
   Future<void> _saveExercise() async {
+    debugPrint('💾 SAVING EXERCISE: ${_selectedExercise?.name}');
+    debugPrint('   Exercise ID: ${_selectedExercise?.exerciseId}');
+    debugPrint('   Workout ID: ${widget.workoutId}');
+    debugPrint('   Current sets to save: ${_currentSets.length}');
+    
     if (_selectedExercise == null || _currentSets.isEmpty) {
+      debugPrint('❌ Save failed: Missing exercise or sets');
       _showError('Please add at least one set');
       return;
     }
     
+    // Log current workout state BEFORE adding new exercise
+    debugPrint('📊 CURRENT WORKOUT STATE:');
+    debugPrint('   Total exercises: ${_workout!.exercises.length}');
+    for (int i = 0; i < _workout!.exercises.length; i++) {
+      final ex = _workout!.exercises[i];
+      debugPrint('   Exercise ${i + 1}: ${ex.exerciseName} (ID: ${ex.exerciseId}) - ${ex.sets.length} sets');
+    }
+    
+    // Check for duplicate exercises and handle them
+    final duplicateExercises = _workout!.exercises.where((we) => we.exerciseId == _selectedExercise!.exerciseId);
+    
     try {
-      // Create WorkoutExercise
-      final workoutExercise = WorkoutExercise(
-        exerciseId: _selectedExercise!.exerciseId,
-        exerciseName: _selectedExercise!.name,
-        bodyParts: _selectedExercise!.bodyParts,
-        sets: _currentSets,
-        orderIndex: _workout!.exercises.length + 1,
-        workoutId: widget.workoutId,
-      );
+      List<WorkoutExercise> updatedExercises;
       
-      // Update workout with new exercise
+      if (duplicateExercises.isNotEmpty) {
+        debugPrint('🔄 HANDLING DUPLICATE: Found ${duplicateExercises.length} existing instances of exercise ${_selectedExercise!.name}');
+        
+        // Get the first existing exercise to merge with
+        final existingExercise = duplicateExercises.first;
+        debugPrint('   Merging with existing: ${existingExercise.exerciseName} (${existingExercise.sets.length} existing sets)');
+        
+        // Create new sets with proper numbering (continuing from existing sets)
+        final newSets = _currentSets.map((set) => set.copyWith(
+          setNumber: existingExercise.sets.length + set.setNumber,
+        )).toList();
+        
+        debugPrint('   Adding ${_currentSets.length} new sets (numbered ${existingExercise.sets.length + 1}-${existingExercise.sets.length + _currentSets.length})');
+        
+        // Create merged exercise with combined sets
+        final mergedExercise = existingExercise.copyWith(
+          sets: [...existingExercise.sets, ...newSets],
+        );
+        
+        debugPrint('🔄 MERGED WorkoutExercise:');
+        debugPrint('   Exercise: ${mergedExercise.exerciseName}');
+        debugPrint('   Total sets after merge: ${mergedExercise.sets.length}');
+        for (int i = 0; i < mergedExercise.sets.length; i++) {
+          final set = mergedExercise.sets[i];
+          debugPrint('     Set ${set.setNumber}: ${set.weight}kg x ${set.reps} reps');
+        }
+        
+        // Replace the existing exercise in the workout
+        updatedExercises = _workout!.exercises.map((we) {
+          if (we.exerciseId == _selectedExercise!.exerciseId) {
+            return mergedExercise;
+          }
+          return we;
+        }).toList();
+        
+        debugPrint('✅ Duplicate exercise merged successfully');
+        
+      } else {
+        debugPrint('➕ ADDING NEW EXERCISE: No duplicates found');
+        
+        // Create new WorkoutExercise (original behavior for new exercises)
+        final workoutExercise = WorkoutExercise(
+          exerciseId: _selectedExercise!.exerciseId,
+          exerciseName: _selectedExercise!.name,
+          bodyParts: _selectedExercise!.bodyParts,
+          sets: _currentSets,
+          orderIndex: _workout!.exercises.length + 1,
+          workoutId: widget.workoutId,
+        );
+        
+        debugPrint('🏗️  CREATED WorkoutExercise:');
+        debugPrint('   Exercise ID: ${workoutExercise.exerciseId}');
+        debugPrint('   Exercise Name: ${workoutExercise.exerciseName}');
+        debugPrint('   Sets count: ${workoutExercise.sets.length}');
+        
+        // Add as new exercise
+        updatedExercises = [..._workout!.exercises, workoutExercise];
+      }
+      
+      // Update workout with processed exercises
       final updatedWorkout = _workout!.copyWith(
-        exercises: [..._workout!.exercises, workoutExercise],
+        exercises: updatedExercises,
       );
       
+      debugPrint('🔄 CALLING updateWorkout() with ${updatedWorkout.exercises.length} total exercises');
       await _workoutRepository.updateWorkout(updatedWorkout);
+      debugPrint('✅ updateWorkout() completed successfully');
       
       if (mounted) {
         setState(() {
@@ -293,10 +390,12 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
           _currentSets = [];
         });
         
+        debugPrint('✅ Exercise saved successfully! New total: ${updatedWorkout.exercises.length} exercises');
         _showSuccess('Exercise saved successfully!');
       }
       
     } catch (e) {
+      debugPrint('❌ SAVE EXERCISE FAILED: $e');
       _showError('Failed to save exercise: $e');
     }
   }
