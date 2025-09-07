@@ -1,6 +1,8 @@
 /// SQLite-based workout models for local data persistence
 /// Designed for offline-first workout tracking functionality
 
+import 'package:flutter/foundation.dart';
+
 class Workout {
   final String workoutId;
   final String userId;
@@ -560,15 +562,28 @@ class WorkoutTemplate {
 
   /// Convert template to a workout
   Workout toWorkout({required String userId, String? customName}) {
+    debugPrint('🔄 Converting template "$name" to workout...');
+    debugPrint('📊 Template has ${exercises.length} exercises');
+    
+    // Generate workoutId first
+    final workoutId = 'workout_${DateTime.now().millisecondsSinceEpoch}';
+    
+    final workoutExercises = exercises.map((templateExercise) {
+      debugPrint('  Converting: ${templateExercise.exerciseName} (ID: ${templateExercise.exerciseId})');
+      return templateExercise.toWorkoutExercise().copyWith(workoutId: workoutId);
+    }).toList();
+    
+    debugPrint('💪 Created workout "$workoutId" with ${workoutExercises.length} exercises');
+    
     return Workout(
-      workoutId: 'workout_${DateTime.now().millisecondsSinceEpoch}',
+      workoutId: workoutId,
       userId: userId,
       name: customName ?? name,
       targetBodyParts: List.from(targetBodyParts),
       plannedDurationMinutes: estimatedDurationMinutes ?? 45,
       createdAt: DateTime.now(),
       status: WorkoutStatus.planned,
-      exercises: exercises.map((templateExercise) => templateExercise.toWorkoutExercise()).toList(),
+      exercises: workoutExercises,
     );
   }
 

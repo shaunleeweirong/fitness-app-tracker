@@ -108,25 +108,79 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
     try {
       List<Exercise> exercises = [];
       
-      // Load exercises for each target body part
-      for (final bodyPart in _workout!.targetBodyParts) {
-        final bodyPartExercises = await _exerciseService.getExercises(
-          bodyPart: bodyPart,
-          limit: 20,
-        );
-        exercises.addAll(bodyPartExercises);
-      }
-      
-      // Remove duplicates and sort by popularity
-      final exerciseMap = <String, Exercise>{};
-      for (final exercise in exercises) {
-        exerciseMap[exercise.exerciseId] = exercise;
+      // CRITICAL FIX: Check if this workout has predefined exercises from a template
+      // Template workouts will have WorkoutExercise objects with exercise IDs
+      if (_workout!.exercises.isNotEmpty) {
+        debugPrint('🎯 TEMPLATE WORKOUT DETECTED: ${_workout!.exercises.length} predefined exercises');
+        
+        // Extract exercise IDs from the template workout exercises
+        final exerciseIds = _workout!.exercises.map((we) => we.exerciseId).toList();
+        debugPrint('🔍 Looking up exercise IDs: $exerciseIds');
+        
+        // Get the full Exercise objects for these specific IDs
+        exercises = await _exerciseService.getExercisesByIds(exerciseIds);
+        debugPrint('📦 Found ${exercises.length} exercises from service');
+        
+        // If we didn't find all exercises by ID, create Exercise objects from WorkoutExercise data
+        if (exercises.length < _workout!.exercises.length) {
+          debugPrint('⚠️ Some exercises not found, creating from WorkoutExercise data');
+          final foundIds = exercises.map((e) => e.exerciseId).toSet();
+          
+          for (final workoutExercise in _workout!.exercises) {
+            if (!foundIds.contains(workoutExercise.exerciseId)) {
+              debugPrint('🔧 Creating Exercise object for: ${workoutExercise.exerciseName}');
+              // Create an Exercise object from WorkoutExercise data
+              exercises.add(Exercise(
+                exerciseId: workoutExercise.exerciseId,
+                name: workoutExercise.exerciseName,
+                imageUrl: '', // Will be empty for template exercises
+                equipments: ['Unknown'], // Template exercises don't store equipment
+                bodyParts: workoutExercise.bodyParts,
+                targetMuscles: workoutExercise.bodyParts, // Use body parts as target muscles
+                secondaryMuscles: [],
+                instructions: [],
+              ));
+            }
+          }
+        }
+        
+        // Sort by the order they appear in the template
+        exercises.sort((a, b) {
+          final aIndex = _workout!.exercises.indexWhere((we) => we.exerciseId == a.exerciseId);
+          final bIndex = _workout!.exercises.indexWhere((we) => we.exerciseId == b.exerciseId);
+          return aIndex.compareTo(bIndex);
+        });
+        
+        debugPrint('✅ TEMPLATE EXERCISES LOADED: ${exercises.length} exercises ready');
+        for (int i = 0; i < exercises.length; i++) {
+          debugPrint('  ${i + 1}. ${exercises[i].name}');
+        }
+      } else {
+        debugPrint('🔍 CUSTOM WORKOUT: Loading exercises by body parts');
+        
+        // Original logic: Load exercises for each target body part (for custom workouts)
+        for (final bodyPart in _workout!.targetBodyParts) {
+          final bodyPartExercises = await _exerciseService.getExercises(
+            bodyPart: bodyPart,
+            limit: 20,
+          );
+          exercises.addAll(bodyPartExercises);
+        }
+        
+        // Remove duplicates and sort by popularity
+        final exerciseMap = <String, Exercise>{};
+        for (final exercise in exercises) {
+          exerciseMap[exercise.exerciseId] = exercise;
+        }
+        exercises = exerciseMap.values.toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+        
+        debugPrint('✅ CUSTOM EXERCISES LOADED: ${exercises.length} exercises available');
       }
       
       if (mounted) {
         setState(() {
-          _availableExercises = exerciseMap.values.toList()
-            ..sort((a, b) => a.name.compareTo(b.name));
+          _availableExercises = exercises;
           _isLoadingExercises = false;
         });
       }
@@ -416,7 +470,7 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
               ),
             ),
             Text(
-              '${_workout!.exercises.length} exercises • ${_getTotalSets()} sets',
+              '${_getDisplayExerciseCount()} exercises',
               style: const TextStyle(
                 color: Colors.white60,
                 fontSize: 14,
@@ -1061,5 +1115,32 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
 
   int _getTotalSets() {
     return _workout!.exercises.fold(0, (sum, exercise) => sum + exercise.sets.length);
+  }
+
+  /// Get exercise count for header display
+  /// For template workouts: shows total template exercises available
+  /// For custom workouts: shows currently logged exercises
+  int _getDisplayExerciseCount() {
+    // If this is a template workout (has predefined exercises), show available exercise count
+    if (_workout != null && _workout!.exercises.isNotEmpty) {
+      // Template workout: show the number of available exercises from template
+      return _availableExercises.length;
+    }
+    // Custom workout: show the number of exercises currently being logged
+    return _workout?.exercises.length ?? 0;
+  }
+
+  /// Get set count for header display  
+  /// For template workouts: shows expected sets based on template data
+  /// For custom workouts: shows actual logged sets
+  int _getDisplaySetCount() {
+    // If this is a template workout, calculate expected sets from template
+    if (_workout != null && _workout!.exercises.isNotEmpty) {
+      // For now, use 3 sets per exercise as standard for templates
+      // TODO: In future, could read suggestedSets from TemplateExercise if available
+      return _availableExercises.length * 3;
+    }
+    // Custom workout: show actual logged sets
+    return _getTotalSets();
   }
 }
