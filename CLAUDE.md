@@ -1,578 +1,172 @@
 # Weight Lifting Fitness Tracker - Development Plan
 
 ## Project Overview
-A Flutter mobile app designed for weight lifters of all experience levels to track workouts, visualize muscle group progress, and gamify the lifting experience. The app eliminates the need to memorize workout routines during gym sessions by offering fast logging tools, visual feedback, and motivational progress tracking.
+Flutter mobile app for weight lifters to track workouts, visualize muscle group progress, and gamify the lifting experience with fast logging tools and visual feedback.
 
 **Target:** iOS MVP first, then Android in Phase 2
 
 ### App Objectives
-- **Primary**: Track workouts with fast, intuitive logging for gym environments
-- **Secondary**: Visualize muscle group progress through gamification and radar charts
-- **Motivational**: Gamify the weight lifting process to encourage progress and fun
-- **Visual**: Provide immediate progress feedback to address fitness app abandonment (73% users quit within 30 days due to lack of visual progress)
+- **Primary**: Fast, intuitive workout logging for gym environments
+- **Secondary**: Gamified muscle group progress visualization with radar charts
+- **Visual**: Immediate progress feedback (address 73% user abandonment due to lack of visual progress)
 
 ### Target Audience
-- Weight lifters (beginners to advanced)
-- Users seeking structured progress tracking
-- Fitness enthusiasts interested in gamified motivation
-- Gym-goers who want data-driven workout insights
+Weight lifters (beginners to advanced), fitness enthusiasts seeking structured progress tracking and gamification
 
 ## Current Status & Major Accomplishments
 
-### ✅ Core MVP + Navigation Polish + Progress Screen Complete (Phases 1A-1G + Phase 2 + Progress Enhancement)
-- ✅ **Phase 1A:** Foundation & Theme Setup with professional UI styling
-- ✅ **Phase 1C:** Exercise Database with 1,500+ exercises, visual body part selection, and equipment-focused popular badges
-- ✅ **Phase 1D:** Complete Workout Logging with SQLite, statistics, history, and real-time tracking
+### ✅ Core MVP Complete (Phases 1A-1G + Phase 2 + Progress Enhancement)
+- ✅ **Phase 1A-1C:** Foundation, UI styling, Exercise Database (1,500+ exercises), visual body part selection
+- ✅ **Phase 1D:** Complete Workout Logging with SQLite, statistics, history, real-time tracking
 - ✅ **Phase 1E:** Rest Timer with audio notifications and workout integration
-- ✅ **Phase 1F:** Workout Plans & Templates System with 7 default templates and CRUD management
-- ✅ **Phase 1G:** Template Discovery & Navigation Flow with dynamic recommendations and layout polish
-- ✅ **Phase 2:** Navigation Polish & Template Enhancement with advanced filtering, search, and action buttons
-- ✅ **Progress Screen Enhancement:** Enhanced dashboard with layout overflow fixes and visual improvements
-- ✅ **Database Stability:** Fixed connection lifecycle issues with retry logic and proper resource management
-- ✅ **Duplicate Exercise Bug Fix:** Resolved UNIQUE constraint violation by implementing exercise merging logic in workout logging
+- ✅ **Phase 1F-1G:** Workout Templates System (7 default templates), navigation flow, layout polish
+- ✅ **Phase 2:** Navigation Polish with advanced filtering, search, action buttons
+- ✅ **Progress Screen:** Enhanced dashboard with overflow fixes and visual improvements
+- ✅ **Database Stability:** Connection lifecycle fixes with retry logic
+- ✅ **Bug Fixes:** UNIQUE constraint violation resolved with exercise merging logic
 - 🎯 **Next:** Phase 1H - Progress Tracking & Visualization
 
-### 🚀 Technical Architecture Highlights  
-- **Database**: Comprehensive SQLite schema with 8+ tables, proper indexing, and CRUD operations with connection pooling
-- **Stability**: Robust error handling with database retry logic and shared connection lifecycle management
-- **UI/UX**: Professional Material Design 3 with advanced search, filtering, and polished navigation flow
-- **Templates**: Advanced template system with 7 default templates, CRUD operations, and intelligent recommendations  
-- **Navigation**: Complete flow between Home → Plans → Template Selection → Workout Setup with state management
-- **Performance**: Local-first approach with optimized loading, error recovery, and real-time search
-- **Layout Compliance**: Official Flutter documentation patterns with professional styling and interaction design
+### 🚀 Technical Architecture
+- **Database**: SQLite schema (8+ tables), proper indexing, CRUD operations, connection pooling
+- **UI/UX**: Material Design 3, advanced search/filtering, polished navigation
+- **Templates**: 7 default templates, CRUD operations, intelligent recommendations
+- **Performance**: Local-first approach, optimized loading, error recovery, real-time search
 
 ### 🎪 Ready for Enhancement (Phase 1H+)
-The app now has a **complete MVP + polished navigation + enhanced Progress screen** ready for:
-- Progress tracking with body part visualization and volume calculations
-- Gamification system with XP and achievements  
-- Radar chart visualization for muscle group progress
-- Firebase authentication and cloud sync
+Complete MVP ready for: Progress tracking with body part visualization, gamification (XP/achievements), radar charts, Firebase authentication
 
 ---
 
-## Phase Implementation Details
+## Phase Implementation Summary
 
-### Phase 1C: Professional Exercise Database ✅
-**Goal:** Professional exercise database with ExerciseDB API integration and visual body part filtering
+### Phase 1C-1D: Exercise Database & Workout Logging ✅
+- **Exercise Database**: 1,500+ exercises, interactive body silhouettes, equipment-focused badges
+- **Workout System**: Complete flow (Setup → Logging → History), SQLite integration, statistics engine
+- **Key Files**: `exercise_service.dart`, `body_silhouette.dart`, workout screens
 
-#### Key Achievements
-- **API Integration**: 1,500+ exercises with GIF animations from ExerciseDB API
-- **Premium Database**: 483 curated exercises with equipment-focused popular badge system
-- **Interactive Body Silhouettes**: Front/back view with clickable muscle regions and real-time highlighting
-- **Visual Selection**: Toggle between list view and body part selection with seamless exercise filtering
-- **Popular Badge System**: Equipment-prioritized Tier 1 exercise highlighting (barbell, dumbbell, machine, cable over bodyweight)
+### Phase 1E: Rest Timer ✅
+- **Timer Widget**: Circular progress, preset durations (60s-300s), haptic feedback
+- **Integration**: Auto-triggered after sets, audio/vibration alerts
+- **Testing**: 14 tests with 100% pass rate
 
-#### Technical Implementation
-- `lib/services/common_exercise_service.dart`: Local database with popular detection and sorting
-- `lib/services/exercise_service.dart`: API integration with popularity-based filtering
-- `lib/widgets/body_silhouette.dart`: Interactive body diagrams with muscle group mapping
+### Phase 1F-1G: Templates & Navigation ✅
+- **Template System**: 7 default templates, CRUD operations, categories (Push/Pull/Legs/etc)
+- **Navigation Flow**: Home → Plans → Template Selection → Workout Setup
+- **Features**: Search, filtering, favorites, intelligent recommendations
 
-### Phase 1D: Complete Workout Logging System ✅
-**Goal:** Core workout tracking with customizable workout creation
+### Key Bug Fixes & Enhancements ✅
 
-#### Key Achievements
-- **WorkoutSetupScreen**: Visual body part selection with time customization
-- **WorkoutLoggingScreen**: Real-time exercise tracking with set-by-set logging (915 lines)
-- **WorkoutHistoryScreen**: Comprehensive statistics and filtering (913 lines)
-- **SQLite Integration**: Full CRUD operations with proper repository pattern
-- **Statistics Engine**: Volume calculations, completion rates, and progress metrics
+#### Body Silhouette Enhancement ✅
+**Solution**: `Transform` with `Matrix4.diagonal3Values(1.8, 1.3, 1.0)` for asymmetric scaling
+- **Files**: `lib/widgets/body_silhouette.dart` (lines 129-137, 167-175)
+- **Result**: Optimal visual prominence and full interactive functionality
 
-#### Technical Implementation
-- Complete workout flow: Setup → Logging → Completion → History
-- Professional UI with Material Design 3 compliance
-- Advanced filtering, pagination, and status-based navigation
-- 25+ integration tests covering complete workout flow
+#### Database Connection Fixes ✅
+**Problem**: "DatabaseException(error database_closed)" errors on startup
+**Solution**: Removed improper `.close()` calls in screen dispose methods, added retry logic
+- **Files**: `workout_history_screen.dart`, `workout_logging_screen.dart`, `workout_setup_screen.dart`
+- **Result**: Stable database operations across all screens
 
-### Phase 1E: Rest Timer Implementation ✅
-**Goal:** Professional countdown timer with audio/vibration notifications
+#### Progress Screen Layout Fixes ✅
+**Problem**: Layout overflow errors ("BOTTOM OVERFLOWED BY 4.7 PIXELS")
+**Solution**: GridView childAspectRatio optimization (2.2 → 1.4), Flexible text wrappers
+- **Files**: `main.dart`, `progress_overview_widget.dart`
+- **Result**: Professional layout with no overflow errors
 
-#### Key Achievements
-- **RestTimer Widget**: Circular progress animation with preset durations (60s-300s)
-- **Timer Controls**: Start, pause, reset, skip with haptic feedback
-- **Audio System**: TimerSoundService with configurable alerts
-- **Workout Integration**: Auto-triggered modal after set completion
-- **Visual Feedback**: Color-coded display (green→orange→red) with pulse animations
-
-#### Technical Implementation
-- `lib/widgets/rest_timer.dart`: Complete timer widget (415 lines)
-- `lib/services/timer_sound_service.dart`: Audio notification service
-- 9 widget tests + 5 integration tests with 100% pass rate
-
-### Phase 1F: Workout Plans & Templates System ✅
-**Goal:** Complete template management with CRUD operations and intelligent recommendations
-
-#### Key Achievements
-- **Template Management**: WorkoutPlansScreen with tabs (All, Favorites, Recent) and advanced filtering
-- **Template Creation**: CreateWorkoutPlanScreen with exercise selection and body part targeting
-- **Repository Pattern**: WorkoutTemplateRepository with full CRUD, statistics, and analytics
-- **Template Categories**: Push, Pull, Legs, Full Body, Upper Body, Cardio, Strength, Custom
-
-#### Technical Implementation
-- Advanced querying with search, category filtering, and popularity scoring
-- Template-to-workout conversion with seamless WorkoutSetupScreen integration
-- Usage tracking, favoriting, and recommendation algorithms
-
-### Phase 1G: Template Discovery & Navigation Flow ✅
-**Goal:** Fix template discovery UX issues and implement dynamic workout recommendations
-
-#### Key Achievements
-- **7 Default Templates**: Professional equipment-focused templates (Chest Focus, Upper Legs Power, Back Builder, Shoulder Sculptor, Arm Destroyer, Push Day, Pull Day)
-- **Dynamic Homepage**: "Today's Workout" shows real template data with day-of-week rotation
-- **Database Fixes**: Resolved connection lifecycle issues preventing template loading
-- **Layout Polish**: Applied Flutter-verified Row overflow solutions with SingleChildScrollView horizontal scrolling
-- **Visual Distinction**: "Default Workouts (7)" and "My Custom Plans" section headers
-
-#### Technical Implementation
-- `lib/services/default_template_seeder_service.dart`: Automatic template creation on app launch
-- `lib/services/workout_recommendation_service.dart`: Intelligent daily suggestions
-- Flutter compliance with official documentation patterns for layout overflow prevention
-- Error recovery and retry logic for database connection issues
-
-### Body Silhouette Size Enhancement ✅
-**Status:** ✅ **COMPLETED**  
-**Goal:** Increase body silhouette display size for better user interaction and visual clarity
-
-#### Final Solution: Asymmetric Transform Scaling ✅
-**Root Cause Discovered:** The issue was not Flutter layout constraints, but the PNG files themselves containing thin silhouette artwork (1080×1350 aspect ratio = 0.8, making them naturally tall and narrow).
-
-**Successful Solution:** `Transform` with `Matrix4.diagonal3Values()` for asymmetric scaling
-```dart
-Transform(
-  transform: Matrix4.diagonal3Values(1.8, 1.3, 1.0), // X=1.8x, Y=1.3x, Z=1.0x
-  alignment: Alignment.center,
-  child: Image.asset(
-    'assets/images/body_silhouette_front.png',
-    width: 149,
-    height: 285,
-    fit: BoxFit.fill,
-  ),
-)
-```
-
-#### Implementation Results ✅
-- **Width Enhancement**: 1.8x scaling provides excellent visual width, making silhouettes much more interactive
-- **Height Optimization**: 1.3x scaling maintains proportions without excessive height
-- **Visual Balance**: Perfect balance between width prominence and appropriate height
-- **No Layout Errors**: Transform scaling is purely visual, no constraint violations
-- **Maintained Functionality**: All clickable regions and muscle highlighting work perfectly
-- **User Experience**: Silhouettes now visually prominent and easy to interact with
-
-#### Technical Implementation
-**Files Modified:**
-- `lib/widgets/body_silhouette.dart` lines 129-137 (front view)
-- `lib/widgets/body_silhouette.dart` lines 167-175 (back view)
-
-**Key Technical Details:**
-- **Matrix4.diagonal3Values(1.8, 1.3, 1.0)**: Asymmetric scaling (width=1.8x, height=1.3x)
-- **alignment: Alignment.center**: Ensures proper scaling from center point
-- **BoxFit.fill**: Maintains exact container dimensions before scaling
-- **No clickable region adjustments needed**: Transform only affects visual rendering
-
-#### Failed Approaches & Lessons Learned ❌
-1. **Container Constraint Modifications** (FAILED): OverflowBox, IntrinsicWidth, Flexible widgets
-2. **Layout Restructuring** (FAILED): Row alignment changes, SizedBox modifications
-3. **Uniform Transform.scale** (PARTIALLY SUCCESSFUL): scale: 1.8 provided good width but excessive height
-
-#### Success Criteria Achieved ✅
-- [x] ✅ Body silhouettes visible and functional 
-- [x] ✅ Silhouettes display with excellent visual prominence and interactivity
-- [x] ✅ No layout constraint errors or warnings
-- [x] ✅ Interactive muscle selection working perfectly at scaled size
-- [x] ✅ Responsive behavior maintained across screen interactions
-
-**Final Result:** Body silhouettes now provide optimal user experience with perfect visual balance and full interactive functionality.
-
-### Database Connection Lifecycle Fixes ✅
-**Status:** ✅ **COMPLETED**  
-**Goal:** Resolve "DatabaseException(error database_closed)" errors occurring on app startup
-
-#### Problem Identified ✅
-**Root Cause:** Multiple screens were improperly closing the shared database connection in their `dispose()` methods, causing subsequent database operations to fail with "database_closed" errors.
-
-#### Solution Implemented ✅
-**Database Connection Lifecycle Management:**
-1. **Identified Problem Screens**: Found 4 screens with improper database `.close()` calls
-2. **Fixed Connection Sharing**: Commented out all database close calls in screen dispose methods
-3. **Added Retry Logic**: Enhanced error handling with automatic retry for connection issues
-4. **Resource Management**: Proper singleton database connection shared across app lifecycle
-
-#### Files Modified ✅
-- `lib/screens/workout_history_screen.dart`: Added retry logic + commented out `.close()`
-- `lib/screens/workout_logging_screen.dart`: Commented out `_workoutRepository.close()`
-- `lib/screens/workout_setup_screen.dart`: Commented out `_repository.close()`
-- `lib/screens/workout_plans_screen.dart`: Already properly handled ✅
-- `lib/screens/create_workout_plan_screen.dart`: Already properly handled ✅
-
-#### Technical Implementation Details ✅
-**Retry Logic Pattern Added:**
-```dart
-} catch (e) {
-  print('Error loading data: $e');
-  
-  // If database connection issue, try to retry once
-  if (e.toString().contains('database_closed')) {
-    print('Database connection closed, attempting retry...');
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadDataRetry();
-      return;
-    } catch (retryError) {
-      print('Retry failed: $retryError');
-    }
-  }
-  
-  // Handle error normally
-  _showError('Failed to load data: $e');
-}
-```
-
-**Database Connection Comments:**
-```dart
-@override
-void dispose() {
-  _controllers.dispose();
-  // Don't close the database connection - it's shared across the app
-  // _repository.close();
-  super.dispose();
-}
-```
-
-#### Results Achieved ✅
-- [x] ✅ Eliminated "DatabaseException(error database_closed)" errors on app startup
-- [x] ✅ Workout History screen loads properly without database connection issues
-- [x] ✅ All screens now share the database connection properly throughout app lifecycle
-- [x] ✅ Added robust retry logic for edge cases during app initialization
-- [x] ✅ Improved error handling and user feedback for database operations
-
-**Final Result:** Database operations are now stable and reliable across all screens with proper connection lifecycle management and automated error recovery.
-
-### Phase 2: Navigation Polish & Template Enhancement ✅
-**Status:** ✅ **COMPLETED**  
-**Goal:** Improve navigation flow and template category functionality
-
-#### Key Achievements ✅
-- **Enhanced Navigation**: Seamless flow between Home → Plans → Template Selection → Workout Setup
-- **Advanced Search**: Full-text search functionality across all templates with real-time filtering
-- **Category Filtering**: Visual category chips with dynamic filtering (Push, Pull, Legs, Full Body, etc.)
-- **Template Actions**: Complete action button system (Start Workout, Edit Template, Toggle Favorite)
-- **Visual Polish**: Professional Material Design 3 implementation with consistent styling
-- **Terminology Standardization**: Consistent language and UX patterns throughout all screens
-
-#### Technical Implementation ✅
-**Navigation Flow:**
-- Home screen "Today's Workout" integrates with template recommendations
-- "Browse All Workouts" navigation from Home → WorkoutPlansScreen  
-- Template selection seamlessly transitions to WorkoutSetupScreen
-- Back navigation maintains proper state and user context
-
-**Template Discovery:**
-- Advanced filtering system with category chips and search
-- Template cards with metadata display (exercises, duration, difficulty)
-- Favorite/unfavorite functionality with persistent storage
-- Usage tracking and intelligent recommendations
-
-**Action Integration:**
-- "Start Workout" button creates workout session from template
-- Template editing with full CRUD operations
-- Favorite system with visual indicators and filtering
-- Consistent button styling and interaction patterns
-
-#### Results Achieved ✅
-- [x] ✅ Professional navigation flow with no UX friction points
-- [x] ✅ Advanced template discovery with search and category filtering  
-- [x] ✅ Complete template action system with Start/Edit/Favorite functionality
-- [x] ✅ Consistent terminology and visual design throughout app
-- [x] ✅ Seamless integration between template browsing and workout creation
-- [x] ✅ Professional Material Design 3 styling with enhanced user experience
-
-**Final Result:** Navigation and template discovery now provide a professional, intuitive user experience that matches industry-standard fitness apps with advanced filtering and action capabilities.
-
-### Progress Screen Layout Overflow Fixes ✅
-**Status:** ✅ **COMPLETED**  
-**Goal:** Resolve layout overflow errors in Progress screen for professional user experience
-
-#### Problem Identified ✅
-**Root Cause:** Multiple layout overflow issues causing "BOTTOM OVERFLOWED BY 4.7 PIXELS" and "RIGHT OVERFLOWED BY 18 PIXELS" errors affecting user experience and visual polish.
-
-#### Solution Implemented ✅
-**Layout Optimization Strategy:**
-1. **Stat Cards Overflow Fix**: Adjusted GridView childAspectRatio from 2.2 → 1.4 for better proportions
-2. **Weekly Volume Progress Header Fix**: Replaced `const Spacer()` with `Flexible` wrapper for responsive text layout
-3. **Enhanced Typography**: Increased font sizes and spacing for better readability
-4. **Body Silhouette Scaling**: Maintained original Transform scaling for visual prominence
-
-#### Files Modified ✅
-- `lib/main.dart`: Enhanced Progress screen dashboard with optimized GridView layout and improved stat tiles
-- `lib/widgets/progress_overview_widget.dart`: Fixed header Row overflow with Flexible text wrapper and TextOverflow.ellipsis
-- `lib/widgets/body_silhouette.dart`: Maintained Transform scaling with Matrix4.diagonal3Values(1.8, 1.3, 1.0)
-- `lib/models/progress_dashboard_data.dart`: New progress data model for enhanced dashboard
-- `lib/services/progress_service.dart`: Progress calculation service with mock data integration
-
-#### Technical Implementation Details ✅
-**GridView Optimization:**
-```dart
-GridView.count(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  crossAxisCount: 2,
-  childAspectRatio: 1.4, // Optimized from 2.2 to prevent overflow
-  mainAxisSpacing: 12,
-  crossAxisSpacing: 12,
-  children: [_buildStatTile(...)],
-)
-```
-
-**Header Row Responsive Fix:**
-```dart
-Row(
-  children: [
-    const Icon(Icons.trending_up, color: Color(0xFFFFB74D), size: 20),
-    const SizedBox(width: 8),
-    Flexible(
-      child: Text(
-        'Weekly Volume Progress',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        overflow: TextOverflow.ellipsis,
-      ),
-    ),
-    const SizedBox(width: 8),
-    Container(/* trend indicator badge */)
-  ],
-)
-```
-
-**Enhanced Stat Tile Design:**
-```dart
-Widget _buildStatTile({...}) {
-  return Container(
-    padding: const EdgeInsets.all(16), // Increased from 12
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: color, size: 22), // Increased from 18
-        const SizedBox(height: 6), // Increased spacing
-        Text(value, style: TextStyle(fontSize: 17)), // Increased from 14
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12)),
-      ],
-    ),
-  );
-}
-```
-
-#### Results Achieved ✅
-- [x] ✅ Eliminated "BOTTOM OVERFLOWED BY 4.7 PIXELS" errors on stat cards
-- [x] ✅ Fixed "RIGHT OVERFLOWED BY 18 PIXELS" error in Weekly Volume Progress header
-- [x] ✅ Enhanced Progress screen readability with larger fonts and improved spacing
-- [x] ✅ Maintained body silhouette visual prominence with Transform scaling
-- [x] ✅ Professional layout compliance following Flutter best practices
-- [x] ✅ Enhanced dashboard with progress data models and mock service integration
-
-**Final Result:** Progress screen now displays with professional layout integrity, no overflow errors, and enhanced visual design that matches industry-standard fitness apps.
-
-### Duplicate Exercise Bug Fix ✅
-**Status:** ✅ **COMPLETED**  
-**Goal:** Resolve UNIQUE constraint violation error when adding exercises to template-based workouts
-
-#### Problem Identified ✅
-**Root Cause:** When users selected exercises that already existed in template workouts, the app created duplicate `WorkoutExercise` objects with identical `workout_exercise_id` values, causing SQLite UNIQUE constraint violations.
-
-**Error Sequence:**
-1. Template workout loads with predefined exercises (e.g., "cambered bar lying row")
-2. User selects the same exercise to add sets
-3. App detects duplicate but ignores it and adds as new exercise
-4. Database INSERT fails: `UNIQUE constraint failed: workout_exercises.workout_exercise_id`
-
-#### Solution Implemented ✅
-**Smart Exercise Merging Strategy:**
-1. **Duplicate Detection**: Check if exercise with same `exerciseId` already exists in workout
-2. **Merge Logic**: If duplicate found, add new sets to existing exercise instead of creating new exercise
-3. **Proper Set Numbering**: Continue set numbering from existing sets (e.g., if 2 sets exist, new sets start at 3, 4, 5...)
-4. **In-Place Update**: Replace existing exercise with merged version to maintain single exercise per ID
-
-#### Technical Implementation ✅
-**Files Modified:**
-- `lib/screens/workout_logging_screen.dart`: Enhanced `_saveExercise()` method with duplicate handling logic
-- Added comprehensive debug logging throughout workout flow for future troubleshooting
-
-**Code Logic:**
-```dart
-// Check for duplicate exercises and handle them
-final duplicateExercises = _workout!.exercises.where((we) => we.exerciseId == _selectedExercise!.exerciseId);
-
-if (duplicateExercises.isNotEmpty) {
-  // MERGE: Add new sets to existing exercise
-  final existingExercise = duplicateExercises.first;
-  final newSets = _currentSets.map((set) => set.copyWith(
-    setNumber: existingExercise.sets.length + set.setNumber,
-  )).toList();
-  
-  final mergedExercise = existingExercise.copyWith(
-    sets: [...existingExercise.sets, ...newSets],
-  );
-  
-  // Replace existing exercise in workout
-  updatedExercises = _workout!.exercises.map((we) {
-    if (we.exerciseId == _selectedExercise!.exerciseId) {
-      return mergedExercise;
-    }
-    return we;
-  }).toList();
-  
-} else {
-  // ADD: Normal behavior for new exercises
-  updatedExercises = [..._workout!.exercises, workoutExercise];
-}
-```
-
-#### Debug Logging Added ✅
-**Comprehensive logging across:**
-- `workout_logging_screen.dart`: Exercise selection, set addition, and save operations
-- `workout_repository.dart`: Database transaction details with duplicate detection
-- `database_helper.dart`: Workout exercise ID generation tracking
-- `workout.dart`: Workout state changes with duplicate analysis
-
-#### Results Achieved ✅
-- [x] ✅ Eliminated UNIQUE constraint violations when adding exercises to template workouts
-- [x] ✅ Smart exercise merging provides better user experience (sets get combined vs duplicated)
-- [x] ✅ Proper set numbering maintains logical sequence (1, 2, 3, 4... instead of 1, 1, 2, 2...)
-- [x] ✅ Template and custom workouts both work seamlessly
-- [x] ✅ Comprehensive debug logging enables rapid troubleshooting of future issues
-- [x] ✅ Database integrity maintained with no duplicate workout_exercise_id values
-
-**Final Result:** Users can now add sets to exercises that already exist in template workouts without database errors. The system intelligently merges sets with existing exercises instead of creating problematic duplicates.
+#### Duplicate Exercise Bug Fix ✅
+**Problem**: UNIQUE constraint violation when adding exercises to template workouts
+**Solution**: Smart exercise merging - combine sets with existing exercises instead of creating duplicates
+- **Files**: `workout_logging_screen.dart` (enhanced `_saveExercise()` method)
+- **Result**: Seamless exercise addition with proper set numbering
 
 ---
 
 ## Development Roadmap
 
 ### Phase 1H: Progress Tracking & Visualization
-**Goal:** Volume calculations and visual progress representation
-- [ ] Implement volume calculation (weight × reps × sets) from completed workouts
-- [ ] Create body part volume aggregation from local workout logs
-- [ ] Build progress visualization on body silhouettes with heat mapping
-- [ ] Add workout history visualization on muscle groups  
-- [ ] Build comprehensive progress dashboard with statistics
-- [ ] Add historical progress views with time-based filtering
-- [ ] Calculate progress metrics and trends from local storage
-**Deliverable:** Progress tracking with visual body part representation and local data calculations
+- [ ] Volume calculation (weight × reps × sets) from completed workouts
+- [ ] Body part volume aggregation from local logs
+- [ ] Progress visualization on body silhouettes with heat mapping
+- [ ] Comprehensive progress dashboard with statistics
+**Deliverable:** Progress tracking with visual body part representation
 
 ### Phase 1I: Gamification System
-**Goal:** XP and leveling mechanics with local storage
-- [ ] Implement XP calculation from volume
-- [ ] Create body part leveling system
-- [ ] Add level-up notifications
-- [ ] Build XP/level display components
-- [ ] Store XP/level data locally
-**Deliverable:** Working gamification mechanics with local persistence
+- [ ] XP calculation from volume
+- [ ] Body part leveling system
+- [ ] Level-up notifications
+- [ ] XP/level display components
+**Deliverable:** Gamification mechanics with local persistence
 
 ### Phase 1J: Radar Chart Visualization
-**Goal:** Visual progress representation from local data
 - [ ] Integrate flutter_radar_chart package
 - [ ] Create radar chart for body part progress
-- [ ] Add interactive chart features
 - [ ] Style chart to match dark theme
-- [ ] Display local progress data in charts
-**Deliverable:** Visual progress charts showing local workout data
+**Deliverable:** Visual progress charts from local data
 
 ### Phase 1K: Authentication System
-**Goal:** User login/registration functionality (moved after core features)
-- [ ] Set up Firebase project integration
-- [ ] Implement email/password authentication
-- [ ] Add Google OAuth login
-- [ ] Create login, register, and welcome screens
-- [ ] Add basic user session management
-- [ ] Plan local data migration to user accounts
-**Deliverable:** Working authentication flow ready for cloud sync
+- [ ] Firebase project integration
+- [ ] Email/password + Google OAuth authentication
+- [ ] Login, register, welcome screens
+**Deliverable:** Authentication flow ready for cloud sync
 
 ### Phase 1L: Firebase Data Sync
-**Goal:** Cloud storage and real-time sync (moved after core features)
-- [ ] Set up Firestore database structure
-- [ ] Implement workout log cloud sync
-- [ ] Add offline capability with sync when online
-- [ ] Create user data management
-- [ ] Migrate existing local data to Firebase
-- [ ] Implement data sync between local and cloud storage
-**Deliverable:** Cloud-synced workout data with migration from local storage
+- [ ] Firestore database structure
+- [ ] Workout log cloud sync with offline capability
+- [ ] Local data migration to Firebase
+**Deliverable:** Cloud-synced workout data
 
 ---
 
-## Data Models
+## Core Data Models
 
-### Users
 ```dart
+// Users
 class User {
-  String userId;           // Unique identifier
-  String email;           // Email address (unique)
-  String name;            // Display name
-  AuthProvider provider;  // enum: email, google
-  DateTime createdAt;     // Registration timestamp
-  Map<String, int> bodyPartLevels; // XP levels per body part
+  String userId, email, name;
+  AuthProvider provider; // email, google
+  DateTime createdAt;
+  Map<String, int> bodyPartLevels; // XP per body part
 }
-```
 
-### Exercises
-```dart
+// Exercises  
 class Exercise {
-  String exerciseId;         // Unique identifier
-  String name;              // Exercise name
-  List<String> bodyParts;   // Target body parts
-  String equipment;         // Required equipment
-  String instructions;      // Step-by-step guide
-  String gifUrl;           // Animation URL
-  bool isPopular;          // Equipment-focused popularity badge
+  String exerciseId, name, equipment, instructions, gifUrl;
+  List<String> bodyParts; // Target muscle groups
+  bool isPopular; // Equipment-focused badge
 }
-```
 
-### Workout Log
-```dart
+// Workout Log
 class WorkoutLog {
-  String logId;        // Unique identifier
-  String userId;       // Foreign key to Users
-  String exerciseId;   // Foreign key to Exercises
-  double weight;       // Weight lifted (kg)
-  int sets;           // Number of sets
-  int reps;           // Reps per set
-  DateTime timestamp; // When exercise was performed
-  double volume;      // Calculated: weight × reps × sets
+  String logId, userId, exerciseId;
+  double weight, volume; // volume = weight × reps × sets
+  int sets, reps;
+  DateTime timestamp;
 }
-```
 
-### Body Part Progress
-```dart
+// Body Part Progress
 class BodyPartProgress {
-  String userId;          // Foreign key to Users
-  String bodyPart;        // Body part name
-  double totalVolume;     // Lifetime volume lifted
-  int xpLevel;           // Current XP level
-  DateTime lastWorked;   // Last workout date
-  List<Achievement> achievements; // Unlocked achievements
+  String userId, bodyPart;
+  double totalVolume; // Lifetime volume
+  int xpLevel;
+  DateTime lastWorked;
+  List<Achievement> achievements;
 }
 ```
 
 ---
 
-## Firebase Setup Checklist
-- [ ] Create Firebase project
-- [ ] Enable Authentication (Email/Password + Google)
-- [ ] Set up Firestore database
-- [ ] Configure iOS app in Firebase Console
-- [ ] Download and add GoogleService-Info.plist
-- [ ] Set up Firestore security rules
-- [ ] Test authentication flow
+## Firebase Setup & Testing
 
----
+### Firebase Checklist
+- [ ] Create Firebase project, enable Authentication (Email/Google)
+- [ ] Set up Firestore database, configure iOS app
+- [ ] Download GoogleService-Info.plist, set security rules
 
-## Testing Strategy
-- [ ] Unit tests for business logic (XP calculations, volume tracking)
-- [ ] Widget tests for key UI components
-- [ ] Integration tests for workout flow
-- [ ] Manual testing on physical device in gym environment
-- [ ] Test offline capability and sync
+### Testing Strategy  
+- [ ] Unit tests (XP calculations, volume tracking)
+- [ ] Widget tests (key UI components)
+- [ ] Integration tests (workout flow)
+- [ ] Manual gym environment testing
 
 ---
 
@@ -853,29 +447,17 @@ flutter pub get
 flutter doctor
 ```
 
-### iOS Simulator Refresh Protocol ⚠️
+### iOS Simulator Protocol ⚠️
+**CRITICAL**: Always refresh simulator after code changes
+1. Stop Flutter process
+2. Restart: `flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE`
+3. Wait for complete rebuild
+4. Verify changes are visible
 
-**CRITICAL RULE**: After implementing ANY new code or features, you MUST refresh the iOS simulator to see changes:
+**Why**: Hot reload may not reflect all changes, new features need full restart
 
-1. **Stop current Flutter process** (if running)
-2. **Restart Flutter app**: `flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE`
-3. **Wait for complete rebuild** - Do not interrupt the build process
-4. **Verify changes** are visible in the simulator before proceeding
-
-**Why This Matters:**
-- Hot reload may not reflect all UI changes
-- New feature implementation requires full app restart
-- Database schema changes need complete reload
-- Prevents debugging phantom issues from stale app state
-
-**Never assume changes are live without visual confirmation in the simulator.**
-
-### iOS Simulator Testing
-For detailed iOS simulator setup, troubleshooting, and testing instructions, see **[ios-simulator-setup.md](ios-simulator-setup.md)**
-
-**Quick Start:**
+### Quick Start
 ```bash
-# Boot iPhone 16 simulator and run app
 xcrun simctl boot 5DA4B52F-5EF0-4C65-B044-80691655D7CE
 open -a Simulator
 flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE
@@ -886,42 +468,34 @@ flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE
 ## Design Principles & Security
 
 ### UI/UX Guidelines
-- **Dark mode by default** - Gym-friendly interface optimized for low-light environments
-- **Large tap targets** - Easy interaction during workouts with gloves or sweaty hands
-- **High-contrast text** - Readable in dimly lit gym environments
-- **Minimalist layout** - Reduce distractions and focus on core functionality
-- **Centered CTAs** - Step-by-step flows for onboarding and setup
-- **Visual progress focus** - Immediate feedback on achievements to address 73% user abandonment
+- **Dark mode**: Gym-friendly, low-light optimized interface
+- **Large tap targets**: Easy interaction with gloves/sweaty hands
+- **High-contrast text**: Readable in dimly lit environments
+- **Visual progress focus**: Immediate feedback (address 73% user abandonment)
 
-### Professional Styling Standards
-- **Enhanced Dark Theme**: Deep backgrounds (#0A0A0A), sophisticated surfaces (#1A1A1A, #2A2A2A)
-- **Orange Accent Color**: Consistent #FFB74D for improvements, achievements, and CTAs
-- **Material Design 3**: Professional gradients, proper shadows, enhanced typography hierarchy
-- **Equipment-Focused Design**: Prioritize barbell/dumbbell exercises over bodyweight alternatives
+### Styling Standards
+- **Enhanced Dark Theme**: Deep backgrounds (#0A0A0A), surfaces (#1A1A1A, #2A2A2A)
+- **Orange Accent**: Consistent #FFB74D for achievements and CTAs
+- **Material Design 3**: Professional gradients, shadows, typography
+- **Equipment-Focused**: Prioritize barbell/dumbbell over bodyweight
 
-### Security Considerations
-- **Firebase Authentication**: JWT token management handled by Firebase SDK
-- **Secure Access Rules**: Firestore per-userId data isolation
-- **Data Encryption**: User data encrypted in transit and at rest
-- **OAuth Integration**: Email/password and Google Sign-In with secure token handling
-- **Privacy by Design**: No unnecessary data collection, user-controlled data retention
+### Security
+- **Firebase Auth**: JWT token management, per-userId data isolation
+- **Data Encryption**: Transit and rest encryption, secure OAuth
+- **Privacy**: No unnecessary data collection, user-controlled retention
 
 ---
 
-## Development Status & Notes
+## Development Status & Guidelines
 
 ### ✅ Completed Achievements
-- ✅ **Complete MVP + Navigation Polish + Progress Enhancement**: All essential features plus advanced template discovery and enhanced Progress screen implemented
-- ✅ **Professional UX**: Polished navigation flow with advanced search, filtering, action systems, and overflow-free layouts
-- ✅ **Flutter Best Practices**: Official documentation patterns applied throughout with proper error handling and layout optimization
-- ✅ **Database Architecture**: Comprehensive SQLite with proper relationships, indexing, and connection management  
-- ✅ **Layout Compliance**: All overflow issues resolved with Flutter-verified solutions and responsive design
-- ✅ **Production Ready**: Database stability, navigation polish, and layout integrity ensure professional app experience
+- **Complete MVP**: Essential features, template discovery, Progress screen
+- **Professional UX**: Polished navigation, search, filtering, overflow-free layouts
+- **Database Architecture**: SQLite with relationships, indexing, connection management
+- **Production Ready**: Stable operations, professional experience
 
-### 📋 Development Guidelines
-- Each phase should be fully functional before moving to next
-- Test incrementally after each phase completion
-- Prioritize core workout functionality before gamification features
-- **Always check MCP documentation** before starting new features or phases
-- Maintain proper database connection lifecycle management across all screens
-- Use retry logic pattern for database operations that may fail on app startup
+### 📋 Guidelines
+- Each phase fully functional before proceeding
+- Test incrementally, prioritize core functionality before gamification
+- Check MCP documentation before new features
+- Maintain database connection lifecycle with retry logic

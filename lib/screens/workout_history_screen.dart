@@ -266,11 +266,20 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   void _showWorkoutDetails(Workout workout) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: _buildWorkoutDetailsSheet(workout, scrollController),
+        ),
       ),
-      builder: (context) => _buildWorkoutDetailsSheet(workout),
     );
   }
 
@@ -283,6 +292,212 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  /// Show appropriate delete confirmation based on workout status
+  Future<bool?> _showDeleteConfirmation(Workout workout) async {
+    if (workout.status == WorkoutStatus.inProgress) {
+      return await _showInProgressDeleteConfirmation(workout);
+    } else {
+      return await _showCompletedDeleteConfirmation(workout);
+    }
+  }
+
+  /// Show simple confirmation for in-progress workouts
+  Future<bool?> _showInProgressDeleteConfirmation(Workout workout) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text(
+            'Delete Incomplete Workout',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${workout.name}"? This incomplete workout will be permanently removed.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show two-step confirmation for completed workouts
+  Future<bool?> _showCompletedDeleteConfirmation(Workout workout) async {
+    // First dialog - general warning
+    final firstConfirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text(
+            'Delete Completed Workout',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Delete "${workout.name}"? This will affect your progress statistics and cannot be undone.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Continue',
+                style: TextStyle(color: Color(0xFFFFB74D)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (firstConfirm != true) return false;
+
+    // Second dialog - detailed impact warning
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text(
+            'Final Confirmation',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This will permanently remove:',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• ${workout.totalVolume.toStringAsFixed(0)} kg from your total volume',
+                style: const TextStyle(color: Color(0xFFFFB74D)),
+              ),
+              Text(
+                '• ${workout.exercises.length} exercise${workout.exercises.length == 1 ? '' : 's'} from your history',
+                style: const TextStyle(color: Color(0xFFFFB74D)),
+              ),
+              Text(
+                '• ${workout.actualDuration.inMinutes} minute${workout.actualDuration.inMinutes == 1 ? '' : 's'} of training time',
+                style: const TextStyle(color: Color(0xFFFFB74D)),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Are you absolutely sure?',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Keep Workout',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Delete Forever',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Delete workout and refresh the list
+  Future<void> _deleteWorkout(Workout workout) async {
+    try {
+      await _workoutRepository.deleteWorkout(workout.workoutId);
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${workout.name} deleted successfully'),
+            backgroundColor: Colors.green[700],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      
+      // Refresh the workout list and statistics
+      await _loadWorkoutHistory();
+      
+    } catch (e) {
+      debugPrint('Error deleting workout: $e');
+      _showError('Failed to delete workout. Please try again.');
+    }
+  }
+
+  /// Build status-aware menu items for workout cards
+  List<PopupMenuEntry<String>> _buildWorkoutMenuItems(Workout workout) {
+    final List<PopupMenuEntry<String>> items = [];
+    
+    // Delete option (always available)
+    items.add(
+      PopupMenuItem<String>(
+        value: 'delete',
+        child: Row(
+          children: [
+            const Icon(
+              Icons.delete,
+              color: Colors.red,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              workout.status == WorkoutStatus.inProgress 
+                  ? 'Clean up workout' 
+                  : 'Delete workout',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    // Add divider if more items will be added in future
+    // items.add(const PopupMenuDivider());
+    
+    // Future menu items can be added here:
+    // - Edit workout (for in-progress)
+    // - Duplicate workout (for completed)
+    // - Share workout
+    // - Export workout data
+    
+    return items;
   }
 
   @override
@@ -592,7 +807,29 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Card(
+      child: Dismissible(
+        key: Key(workout.workoutId),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          child: const Icon(
+            Icons.delete,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        confirmDismiss: (direction) async {
+          return await _showDeleteConfirmation(workout);
+        },
+        onDismissed: (direction) {
+          _deleteWorkout(workout);
+        },
+        child: Card(
         color: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -642,6 +879,28 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: Colors.white70,
+                        size: 20,
+                      ),
+                      color: const Color(0xFF1A1A1A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFF2A2A2A)),
+                      ),
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          final confirmed = await _showDeleteConfirmation(workout);
+                          if (confirmed == true) {
+                            _deleteWorkout(workout);
+                          }
+                        }
+                      },
+                      itemBuilder: (context) => _buildWorkoutMenuItems(workout),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -668,6 +927,30 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 12),
+                
+                // Cleanup hint for in-progress workouts
+                if (workout.status == WorkoutStatus.inProgress)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.cleaning_services,
+                          size: 12,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Swipe left or tap ⋮ to clean up',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 
                 // Statistics
                 Row(
@@ -706,6 +989,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
             ),
           ),
         ),
+        ),
       ),
     );
   }
@@ -727,13 +1011,15 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
-  Widget _buildWorkoutDetailsSheet(Workout workout) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+  Widget _buildWorkoutDetailsSheet(Workout workout, ScrollController scrollController) {
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header
           Row(
             children: [
@@ -840,7 +1126,32 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
               fontSize: 14,
             ),
           ),
+          const SizedBox(height: 20),
+          
+          // Delete Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Close the modal first
+                final confirmed = await _showDeleteConfirmation(workout);
+                if (confirmed == true) {
+                  _deleteWorkout(workout);
+                }
+              },
+              icon: const Icon(Icons.delete, color: Colors.red),
+              label: const Text(
+                'Delete Workout',
+                style: TextStyle(color: Colors.red),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
         ],
+      ),
       ),
     );
   }
