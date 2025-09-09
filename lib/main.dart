@@ -270,7 +270,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    _recommendationService.close();
+    // Don't close recommendation service - it uses shared database connection
+    // _recommendationService.close();
     super.dispose();
   }
 

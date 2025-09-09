@@ -354,7 +354,7 @@ class DatabaseHelper {
     try {
       final seeder = DefaultTemplateSeederService();
       await seeder.seedDefaultTemplatesIfNeeded();
-      await seeder.close();
+      // Don't close seeder - it uses shared database connection
     } catch (e) {
       // Log error but don't fail user creation
       print('Failed to seed default templates: $e');

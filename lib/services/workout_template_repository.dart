@@ -349,8 +349,10 @@ class WorkoutTemplateRepository {
   }
 
   /// Close the database connection
+  /// Note: Don't close shared database connection used by DatabaseHelper singleton
   Future<void> close() async {
-    await _dbHelper.close();
+    // DatabaseHelper uses singleton pattern - don't close shared connection
+    // await _dbHelper.close();
   }
 }
 

@@ -187,7 +187,9 @@ class WorkoutRecommendationService {
   }
 
   /// Close database connections
+  /// Note: Don't close shared database connection used by repository
   Future<void> close() async {
-    await _templateRepository.close();
+    // Repository uses shared database connection - don't close it
+    // await _templateRepository.close();
   }
 }
