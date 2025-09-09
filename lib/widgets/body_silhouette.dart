@@ -218,14 +218,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Shoulders (front delts)
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 20,
+        left: 32,
         top: 52,
         width: 18,
         height: 32,
       ),
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 97,
+        left: 87,
         top: 52,
         width: 18,
         height: 32,
@@ -320,14 +320,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Shoulders (rear delts)
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 20,
+        left: 32,
         top: 52,
         width: 18,
         height: 32,
       ),
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 97,
+        left: 87,
         top: 52,
         width: 18,
         height: 32,
