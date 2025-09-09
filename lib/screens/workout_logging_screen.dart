@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/workout.dart';
 import '../models/exercise.dart';
+import '../models/personal_record.dart';
 import '../services/workout_repository.dart';
 import '../services/exercise_service.dart';
+import '../services/personal_record_service.dart';
 import '../widgets/rest_timer.dart';
 
 /// Workout logging screen for active workout sessions
@@ -23,6 +25,7 @@ class WorkoutLoggingScreen extends StatefulWidget {
 class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
   final WorkoutRepository _workoutRepository = WorkoutRepository();
   final ExerciseService _exerciseService = ExerciseService();
+  final PersonalRecordService _prService = PersonalRecordService();
   
   // State
   Workout? _workout;
@@ -39,6 +42,9 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
   // Rest timer state
   bool _showRestTimer = false;
   bool _autoStartTimer = true;
+  
+  // Personal Records state
+  List<PersonalRecord> _newPRs = [];
 
   @override
   void initState() {
@@ -218,7 +224,7 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
     debugPrint('✅ Exercise selection completed');
   }
 
-  void _addSet() {
+  void _addSet() async {
     debugPrint('🏋️ ADDING SET to exercise: ${_selectedExercise?.name}');
     
     final weightText = _weightController.text.trim();
@@ -249,15 +255,15 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
     debugPrint('🏋️ Creating set with workout_exercise_id: $workoutExerciseId');
     debugPrint('   Weight: ${weight}kg, Reps: $reps, Set #: ${_currentSets.length + 1}');
     
+    final newSet = WorkoutSet(
+      weight: weight,
+      reps: reps,
+      setNumber: _currentSets.length + 1,
+      workoutExerciseId: workoutExerciseId,
+    );
+
     setState(() {
-      _currentSets.add(
-        WorkoutSet(
-          weight: weight,
-          reps: reps,
-          setNumber: _currentSets.length + 1,
-          workoutExerciseId: workoutExerciseId,
-        ),
-      );
+      _currentSets.add(newSet);
       
       // Clear inputs for next set
       _weightController.clear();
@@ -265,6 +271,29 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
     });
     
     debugPrint('✅ Set added successfully! Current sets: ${_currentSets.length}');
+    
+    // Check for new Personal Records
+    try {
+      final newPRs = await _prService.checkAndSaveNewPRs(
+        newSet,
+        _selectedExercise!.exerciseId,
+        _selectedExercise!.name,
+        'default_user', // TODO: Get actual user ID
+        widget.workoutId,
+      );
+
+      if (newPRs.isNotEmpty && mounted) {
+        setState(() {
+          _newPRs.addAll(newPRs);
+        });
+        
+        // Show PR celebration
+        _showPRCelebration(newPRs);
+      }
+    } catch (e) {
+      debugPrint('Error checking PRs: $e');
+      // Don't block the user if PR checking fails
+    }
     
     // Haptic feedback for successful set addition
     HapticFeedback.lightImpact();
@@ -443,6 +472,91 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
         content: Text(message),
         backgroundColor: Colors.green[700],
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showPRCelebration(List<PersonalRecord> newPRs) {
+    if (!mounted || newPRs.isEmpty) return;
+    
+    // Show a special SnackBar for PR achievements
+    final prMessage = newPRs.length == 1 
+        ? '🏆 NEW PR: ${newPRs.first.shortDescription}!'
+        : '🏆 ${newPRs.length} NEW PRs achieved!';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                prMessage,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFFFB74D),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4), // Longer duration for celebration
+        action: SnackBarAction(
+          label: 'VIEW',
+          textColor: Colors.black,
+          onPressed: () => _showPRDetails(newPRs),
+        ),
+      ),
+    );
+    
+    // Extra haptic feedback for PR achievement
+    HapticFeedback.mediumImpact();
+  }
+
+  void _showPRDetails(List<PersonalRecord> prs) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Row(
+          children: [
+            Icon(Icons.emoji_events, color: Color(0xFFFFB74D)),
+            SizedBox(width: 8),
+            Text(
+              'Personal Records!',
+              style: TextStyle(
+                color: Color(0xFFFFB74D),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: prs.map((pr) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              '• ${pr.displayTitle}: ${pr.formattedValue}',
+              style: const TextStyle(color: Colors.white),
+            ),
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Awesome!',
+              style: TextStyle(
+                color: Color(0xFFFFB74D),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

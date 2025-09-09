@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/user_progress.dart';
 
-class ProgressOverviewWidget extends StatelessWidget {
+enum TimeFrame { weekly, monthly, quarterly }
+
+class ProgressOverviewWidget extends StatefulWidget {
   final UserProgress userProgress;
 
   const ProgressOverviewWidget({
@@ -11,8 +13,15 @@ class ProgressOverviewWidget extends StatelessWidget {
   });
 
   @override
+  State<ProgressOverviewWidget> createState() => _ProgressOverviewWidgetState();
+}
+
+class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
+  TimeFrame _selectedTimeFrame = TimeFrame.weekly;
+
+  @override
   Widget build(BuildContext context) {
-    final weeklyComparison = userProgress.getWeeklyComparison();
+    final comparison = _getComparisonForTimeFrame();
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -38,53 +47,63 @@ class ProgressOverviewWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with trend indicator
-          Row(
+          // Header with timeframe selector and trend indicator
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.trending_up,
-                color: Color(0xFFFFB74D),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  'Weekly Volume Progress',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+              // Timeframe tabs
+              _buildTimeFrameTabs(),
+              const SizedBox(height: 12),
+              
+              // Header with trend indicator
+              Row(
+                children: [
+                  const Icon(
+                    Icons.trending_up,
+                    color: Color(0xFFFFB74D),
+                    size: 20,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: weeklyComparison.isImproving 
-                      ? const Color(0xFFFFB74D).withOpacity(0.2) // Orange to match app theme
-                      : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      weeklyComparison.isImproving ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 12,
-                      color: weeklyComparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${weeklyComparison.volumeChangePercentage.abs().toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        fontSize: 11,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '${_getTimeFrameDisplayName()} Volume Progress',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: weeklyComparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
+                        color: Colors.white,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: comparison.isImproving 
+                          ? const Color(0xFFFFB74D).withOpacity(0.2) // Orange to match app theme
+                          : Colors.red.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          comparison.isImproving ? Icons.arrow_upward : Icons.arrow_downward,
+                          size: 12,
+                          color: comparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${comparison.volumeChangePercentage.abs().toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: comparison.isImproving ? const Color(0xFFFFB74D) : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -105,17 +124,17 @@ class ProgressOverviewWidget extends StatelessWidget {
             children: [
               _buildQuickStat(
                 context,
-                'This Week',
-                '${weeklyComparison.currentWorkouts} workouts',
-                weeklyComparison.workoutChangeIndicator,
-                weeklyComparison.isWorkoutCountImproving,
+                _getPeriodDisplayName(),
+                '${comparison.currentWorkouts} workouts',
+                comparison.workoutChangeIndicator,
+                comparison.isWorkoutCountImproving,
               ),
               _buildQuickStat(
                 context,
                 'Volume',
-                '${(weeklyComparison.currentValue / 1000).toStringAsFixed(1)}K kg',
-                weeklyComparison.changeIndicator,
-                weeklyComparison.isImproving,
+                '${(comparison.currentValue / 1000).toStringAsFixed(1)}K kg',
+                comparison.changeIndicator,
+                comparison.isImproving,
               ),
             ],
           ),
@@ -224,20 +243,65 @@ class ProgressOverviewWidget extends StatelessWidget {
 
   List<FlSpot> _getChartData() {
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    
     final spots = <FlSpot>[];
     
-    for (int i = 0; i < 7; i++) {
-      final date = startOfWeek.add(Duration(days: i));
-      final dayProgress = userProgress.dailyProgress.where((day) =>
-        day.date.year == date.year &&
-        day.date.month == date.month &&
-        day.date.day == date.day
-      ).firstOrNull;
-      
-      final volume = dayProgress?.totalVolume ?? 0.0;
-      spots.add(FlSpot(i.toDouble(), volume / 1000)); // Convert to thousands
+    switch (_selectedTimeFrame) {
+      case TimeFrame.weekly:
+        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        for (int i = 0; i < 7; i++) {
+          final date = startOfWeek.add(Duration(days: i));
+          final dayProgress = widget.userProgress.dailyProgress.where((day) =>
+            day.date.year == date.year &&
+            day.date.month == date.month &&
+            day.date.day == date.day
+          ).firstOrNull;
+          
+          final volume = dayProgress?.totalVolume ?? 0.0;
+          spots.add(FlSpot(i.toDouble(), volume / 1000));
+        }
+        break;
+        
+      case TimeFrame.monthly:
+        final startOfMonth = DateTime(now.year, now.month, 1);
+        final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+        final samplingInterval = (daysInMonth / 8).ceil(); // Sample ~8 points
+        
+        for (int i = 0; i < daysInMonth; i += samplingInterval) {
+          final date = startOfMonth.add(Duration(days: i));
+          final dayProgress = widget.userProgress.dailyProgress.where((day) =>
+            day.date.year == date.year &&
+            day.date.month == date.month &&
+            day.date.day == date.day
+          ).firstOrNull;
+          
+          final volume = dayProgress?.totalVolume ?? 0.0;
+          spots.add(FlSpot((i / samplingInterval).toDouble(), volume / 1000));
+        }
+        break;
+        
+      case TimeFrame.quarterly:
+        final startOfQuarter = DateTime(now.year, ((now.month - 1) ~/ 3) * 3 + 1, 1);
+        
+        for (int i = 0; i < 12; i++) { // Weekly data points over 3 months
+          final date = startOfQuarter.add(Duration(days: i * 7));
+          if (date.isAfter(now)) break;
+          
+          // Aggregate week's volume
+          double weekVolume = 0.0;
+          for (int j = 0; j < 7; j++) {
+            final dayDate = date.add(Duration(days: j));
+            final dayProgress = widget.userProgress.dailyProgress.where((day) =>
+              day.date.year == dayDate.year &&
+              day.date.month == dayDate.month &&
+              day.date.day == dayDate.day
+            ).firstOrNull;
+            
+            weekVolume += dayProgress?.totalVolume ?? 0.0;
+          }
+          
+          spots.add(FlSpot(i.toDouble(), weekVolume / 1000));
+        }
+        break;
     }
     
     return spots;
@@ -283,6 +347,88 @@ class ProgressOverviewWidget extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  // Helper methods for timeframe management
+  dynamic _getComparisonForTimeFrame() {
+    switch (_selectedTimeFrame) {
+      case TimeFrame.weekly:
+        return widget.userProgress.getWeeklyComparison();
+      case TimeFrame.monthly:
+        return widget.userProgress.getMonthlyComparison();
+      case TimeFrame.quarterly:
+        // For now, use monthly comparison as quarterly isn't implemented in UserProgress
+        return widget.userProgress.getMonthlyComparison();
+    }
+  }
+
+  String _getTimeFrameDisplayName() {
+    switch (_selectedTimeFrame) {
+      case TimeFrame.weekly:
+        return 'Weekly';
+      case TimeFrame.monthly:
+        return 'Monthly';
+      case TimeFrame.quarterly:
+        return 'Quarterly';
+    }
+  }
+
+  String _getPeriodDisplayName() {
+    switch (_selectedTimeFrame) {
+      case TimeFrame.weekly:
+        return 'This Week';
+      case TimeFrame.monthly:
+        return 'This Month';
+      case TimeFrame.quarterly:
+        return 'This Quarter';
+    }
+  }
+
+  Widget _buildTimeFrameTabs() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildTimeFrameTab('Week', TimeFrame.weekly),
+        const SizedBox(width: 4),
+        _buildTimeFrameTab('Month', TimeFrame.monthly),
+        const SizedBox(width: 4),
+        _buildTimeFrameTab('Quarter', TimeFrame.quarterly),
+      ],
+    );
+  }
+
+  Widget _buildTimeFrameTab(String label, TimeFrame timeFrame) {
+    final isSelected = _selectedTimeFrame == timeFrame;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTimeFrame = timeFrame;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? const Color(0xFFFFB74D).withOpacity(0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected 
+                ? const Color(0xFFFFB74D)
+                : const Color(0xFF2A2A2A),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFFFFB74D) : Colors.white60,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
     );
   }
 }

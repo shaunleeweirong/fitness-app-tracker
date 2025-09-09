@@ -15,6 +15,7 @@ import 'screens/workout_plans_screen.dart';
 import 'widgets/body_silhouette.dart';
 import 'widgets/progress_overview_widget.dart';
 import 'widgets/enhanced_stats_row.dart';
+import 'widgets/personal_records_widget.dart';
 
 void main() {
   runApp(const FitnessTrackerApp());
@@ -1784,6 +1785,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
             
             // Weekly Progress (existing functionality)
             ProgressOverviewWidget(userProgress: MockProgressService.getMockProgress()),
+            
+            const SizedBox(height: 20),
+            
+            // Personal Records Section (NEW)
+            const PersonalRecordsWidget(),
             
             const SizedBox(height: 20),
             

@@ -15,7 +15,7 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static const String _databaseName = 'fitness_tracker.db';
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 3;
 
   // Table names
   static const String tableWorkouts = 'workouts';
@@ -27,6 +27,9 @@ class DatabaseHelper {
   // Template table names
   static const String tableWorkoutTemplates = 'workout_templates';
   static const String tableTemplateExercises = 'template_exercises';
+  
+  // Personal records table name
+  static const String tablePersonalRecords = 'personal_records';
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -157,6 +160,24 @@ class DatabaseHelper {
       )
     ''');
 
+    // Create personal records table
+    await db.execute('''
+      CREATE TABLE $tablePersonalRecords (
+        record_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        exercise_id TEXT NOT NULL,
+        exercise_name TEXT NOT NULL,
+        type INTEGER NOT NULL,
+        value REAL NOT NULL,
+        secondary_value REAL,
+        achieved_at TEXT NOT NULL,
+        workout_id TEXT,
+        notes TEXT,
+        FOREIGN KEY (user_id) REFERENCES $tableUsers (user_id) ON DELETE CASCADE,
+        FOREIGN KEY (workout_id) REFERENCES $tableWorkouts (workout_id) ON DELETE SET NULL
+      )
+    ''');
+
     // Create indexes for better query performance
     await _createIndexes(db);
   }
@@ -185,6 +206,11 @@ class DatabaseHelper {
     // Template exercise indexes
     await db.execute('CREATE INDEX idx_template_exercises_template_id ON $tableTemplateExercises (template_id)');
     await db.execute('CREATE INDEX idx_template_exercises_order ON $tableTemplateExercises (template_id, order_index)');
+    
+    // Personal records indexes
+    await db.execute('CREATE INDEX idx_personal_records_user_id ON $tablePersonalRecords (user_id)');
+    await db.execute('CREATE INDEX idx_personal_records_exercise ON $tablePersonalRecords (exercise_id, type)');
+    await db.execute('CREATE INDEX idx_personal_records_achieved_at ON $tablePersonalRecords (achieved_at DESC)');
   }
 
   /// Handle database upgrades for future versions
@@ -236,6 +262,31 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX idx_workout_templates_usage ON $tableWorkoutTemplates (usage_count DESC)');
       await db.execute('CREATE INDEX idx_template_exercises_template_id ON $tableTemplateExercises (template_id)');
       await db.execute('CREATE INDEX idx_template_exercises_order ON $tableTemplateExercises (template_id, order_index)');
+    }
+    
+    if (oldVersion < 3) {
+      // Add personal records table in version 3
+      await db.execute('''
+        CREATE TABLE $tablePersonalRecords (
+          record_id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          exercise_id TEXT NOT NULL,
+          exercise_name TEXT NOT NULL,
+          type INTEGER NOT NULL,
+          value REAL NOT NULL,
+          secondary_value REAL,
+          achieved_at TEXT NOT NULL,
+          workout_id TEXT,
+          notes TEXT,
+          FOREIGN KEY (user_id) REFERENCES $tableUsers (user_id) ON DELETE CASCADE,
+          FOREIGN KEY (workout_id) REFERENCES $tableWorkouts (workout_id) ON DELETE SET NULL
+        )
+      ''');
+
+      // Create personal records indexes
+      await db.execute('CREATE INDEX idx_personal_records_user_id ON $tablePersonalRecords (user_id)');
+      await db.execute('CREATE INDEX idx_personal_records_exercise ON $tablePersonalRecords (exercise_id, type)');
+      await db.execute('CREATE INDEX idx_personal_records_achieved_at ON $tablePersonalRecords (achieved_at DESC)');
     }
   }
 
