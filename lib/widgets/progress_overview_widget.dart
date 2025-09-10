@@ -184,16 +184,47 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 20,
+              interval: 1.0,
               getTitlesWidget: (value, meta) {
-                const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                if (value.toInt() >= 0 && value.toInt() < days.length) {
-                  return Text(
-                    days[value.toInt()],
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  );
+                final index = value.toInt();
+                
+                // Use switch-case pattern like official fl_chart examples
+                switch (_selectedTimeFrame) {
+                  case TimeFrame.weekly:
+                    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                    if (index >= 0 && index < days.length) {
+                      return Text(
+                        days[index],
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      );
+                    }
+                    break;
+                  case TimeFrame.monthly:
+                    if (index >= 0 && index < 6) {
+                      return Text(
+                        'M${index + 1}',  // M1, M2, M3, M4, M5, M6 (oldest to newest)
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      );
+                    }
+                    break;
+                  case TimeFrame.quarterly:
+                    final maxX = _getMaxXForTimeFrame().toInt();
+                    if (index >= 0 && index <= maxX) {
+                      return Text(
+                        'W${index + 1}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      );
+                    }
+                    break;
                 }
                 return const Text('');
               },
@@ -232,7 +263,7 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
           ),
         ],
         minX: 0,
-        maxX: 6,
+        maxX: _getMaxXForTimeFrame(),
         minY: 0,
         backgroundColor: Colors.transparent,
       ),
@@ -262,20 +293,28 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
         break;
         
       case TimeFrame.monthly:
-        final startOfMonth = DateTime(now.year, now.month, 1);
-        final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-        final samplingInterval = (daysInMonth / 8).ceil(); // Sample ~8 points
-        
-        for (int i = 0; i < daysInMonth; i += samplingInterval) {
-          final date = startOfMonth.add(Duration(days: i));
-          final dayProgress = widget.userProgress.dailyProgress.where((day) =>
-            day.date.year == date.year &&
-            day.date.month == date.month &&
-            day.date.day == date.day
-          ).firstOrNull;
+        // Show last 6 months of data (oldest to newest)
+        for (int i = 5; i >= 0; i--) {
+          final targetMonth = DateTime(now.year, now.month - i, 1);
+          final nextMonth = DateTime(targetMonth.year, targetMonth.month + 1, 1);
           
-          final volume = dayProgress?.totalVolume ?? 0.0;
-          spots.add(FlSpot((i / samplingInterval).toDouble(), volume / 1000));
+          // Aggregate all workouts in that month
+          double monthVolume = 0.0;
+          int daysWithWorkouts = 0;
+          
+          for (final dayProgress in widget.userProgress.dailyProgress) {
+            if (dayProgress.date.isAfter(targetMonth.subtract(const Duration(days: 1))) &&
+                dayProgress.date.isBefore(nextMonth)) {
+              monthVolume += dayProgress.totalVolume;
+              if (dayProgress.totalVolume > 0) {
+                daysWithWorkouts++;
+              }
+            }
+          }
+          
+          // Show as daily average for that month
+          final dailyAverage = daysWithWorkouts > 0 ? monthVolume / daysWithWorkouts : 0.0;
+          spots.add(FlSpot((5 - i).toDouble(), dailyAverage / 1000));
         }
         break;
         
@@ -306,6 +345,27 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
     
     return spots;
   }
+
+  double _getMaxXForTimeFrame() {
+    switch (_selectedTimeFrame) {
+      case TimeFrame.weekly:
+        return 6;  // 7 days (0-6)
+      case TimeFrame.monthly:
+        return 5.0; // 6 months (0-5)
+      case TimeFrame.quarterly:
+        // Calculate actual weeks from start of quarter to now (matching data generation logic)
+        final now = DateTime.now();
+        final startOfQuarter = DateTime(now.year, ((now.month - 1) ~/ 3) * 3 + 1, 1);
+        int actualWeeks = 0;
+        for (int i = 0; i < 12; i++) {
+          final date = startOfQuarter.add(Duration(days: i * 7));
+          if (date.isAfter(now)) break;
+          actualWeeks++;
+        }
+        return (actualWeeks - 1).toDouble(); // Last index
+    }
+  }
+
 
   Widget _buildQuickStat(
     BuildContext context,
