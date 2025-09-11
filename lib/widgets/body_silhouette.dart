@@ -54,10 +54,9 @@ class _BodySilhouetteState extends State<BodySilhouette> {
             const SizedBox(height: 20),
             
             // Body Silhouette
-            IntrinsicWidth(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 // Front View
                 Column(
                   children: [
@@ -92,7 +91,6 @@ class _BodySilhouetteState extends State<BodySilhouette> {
                   ],
                 ),
               ],
-              ),
             ),
             
             const SizedBox(height: 20),
@@ -126,7 +124,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
   Widget _buildFrontView() {
     return UnconstrainedBox(
       child: SizedBox(
-        width: 149,
+        width: 130,
         height: 285,
         child: Stack(
         children: [
@@ -136,7 +134,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
             alignment: Alignment.center,
             child: Image.asset(
               'assets/images/body_silhouette_front.png',
-              width: 149,
+              width: 130,
               height: 285,
               fit: BoxFit.fill,
             ),
@@ -145,7 +143,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           // Highlight overlay for selected body part
           if (widget.selectedBodyPart != null || _hoveredBodyPart != null)
             CustomPaint(
-              size: const Size(149, 285),
+              size: const Size(130, 285),
               painter: BodyHighlightPainter(
                 isBackView: false,
                 selectedBodyPart: widget.selectedBodyPart,
@@ -168,7 +166,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
   Widget _buildBackView() {
     return UnconstrainedBox(
       child: SizedBox(
-        width: 149,
+        width: 130,
         height: 285,
         child: Stack(
         children: [
@@ -178,7 +176,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
             alignment: Alignment.center,
             child: Image.asset(
               'assets/images/body_silhouette_back.png',
-              width: 149,
+              width: 130,
               height: 285,
               fit: BoxFit.fill,
             ),
@@ -187,7 +185,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
           // Highlight overlay for selected body part
           if (widget.selectedBodyPart != null || _hoveredBodyPart != null)
             CustomPaint(
-              size: const Size(149, 285),
+              size: const Size(130, 285),
               painter: BodyHighlightPainter(
                 isBackView: true,
                 selectedBodyPart: widget.selectedBodyPart,
