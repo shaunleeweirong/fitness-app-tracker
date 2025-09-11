@@ -1,7 +1,6 @@
 /// SQLite-based workout models for local data persistence
 /// Designed for offline-first workout tracking functionality
-
-import 'package:flutter/foundation.dart';
+library;
 
 class Workout {
   final String workoutId;
@@ -105,37 +104,6 @@ class Workout {
     List<WorkoutExercise>? exercises,
     String? notes,
   }) {
-    // Debug log when exercises are being updated (most critical for UNIQUE constraint issue)
-    if (exercises != null) {
-      debugPrint('📋 WORKOUT COPYWITH: Updating exercises for ${this.name}');
-      debugPrint('   Original exercises: ${this.exercises.length}');
-      debugPrint('   New exercises: ${exercises.length}');
-      
-      // Check for duplicate exercises in the new list
-      final exerciseIds = exercises.map((e) => e.exerciseId).toList();
-      final uniqueIds = exerciseIds.toSet();
-      if (exerciseIds.length != uniqueIds.length) {
-        debugPrint('🚨 CRITICAL: copyWith detected duplicate exercises!');
-        final duplicateIds = <String>[];
-        for (final id in exerciseIds) {
-          if (exerciseIds.where((x) => x == id).length > 1 && !duplicateIds.contains(id)) {
-            duplicateIds.add(id);
-          }
-        }
-        for (final dupId in duplicateIds) {
-          final count = exerciseIds.where((x) => x == dupId).length;
-          debugPrint('   Duplicate exercise ID "$dupId" appears $count times');
-          
-          // Log details of each duplicate
-          final duplicates = exercises.where((e) => e.exerciseId == dupId).toList();
-          for (int i = 0; i < duplicates.length; i++) {
-            final dup = duplicates[i];
-            debugPrint('     Instance ${i + 1}: ${dup.exerciseName} with ${dup.sets.length} sets (orderIndex: ${dup.orderIndex})');
-          }
-        }
-      }
-    }
-    
     return Workout(
       workoutId: workoutId ?? this.workoutId,
       userId: userId ?? this.userId,
@@ -294,7 +262,7 @@ class WorkoutSet {
   
   String get formattedWeight => weight % 1 == 0 ? '${weight.toInt()}kg' : '${weight}kg';
   
-  String get summary => '${formattedWeight} × ${reps} reps';
+  String get summary => '$formattedWeight × $reps reps';
 
   // Create a copy with updated fields
   WorkoutSet copyWith({
@@ -593,28 +561,15 @@ class WorkoutTemplate {
 
   /// Convert template to a workout
   Workout toWorkout({required String userId, String? customName}) {
-    debugPrint('🔄 Converting template "$name" to workout...');
-    debugPrint('📊 Template has ${exercises.length} exercises');
-    
-    // Generate workoutId first
-    final workoutId = 'workout_${DateTime.now().millisecondsSinceEpoch}';
-    
-    final workoutExercises = exercises.map((templateExercise) {
-      debugPrint('  Converting: ${templateExercise.exerciseName} (ID: ${templateExercise.exerciseId})');
-      return templateExercise.toWorkoutExercise().copyWith(workoutId: workoutId);
-    }).toList();
-    
-    debugPrint('💪 Created workout "$workoutId" with ${workoutExercises.length} exercises');
-    
     return Workout(
-      workoutId: workoutId,
+      workoutId: 'workout_${DateTime.now().millisecondsSinceEpoch}',
       userId: userId,
       name: customName ?? name,
       targetBodyParts: List.from(targetBodyParts),
       plannedDurationMinutes: estimatedDurationMinutes ?? 45,
       createdAt: DateTime.now(),
       status: WorkoutStatus.planned,
-      exercises: workoutExercises,
+      exercises: exercises.map((templateExercise) => templateExercise.toWorkoutExercise()).toList(),
     );
   }
 

@@ -50,8 +50,7 @@ dependencies:
   # SVG rendering for body silhouettes
   flutter_svg: ^2.0.7
   
-  # Charts for progress visualization
-  fl_chart: ^0.69.0
+  # Charts replaced with custom implementation
   
   # Audio for timer notifications
   audioplayers: ^6.1.0

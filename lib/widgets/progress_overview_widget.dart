@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../models/user_progress.dart';
+import 'simple_line_chart.dart';
 
 enum TimeFrame { weekly, monthly, quarterly }
 
@@ -24,6 +24,7 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
     final comparison = _getComparisonForTimeFrame();
     
     return Container(
+      height: 340, // Adjusted height to accommodate chart padding 
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -111,9 +112,11 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
           const SizedBox(height: 16),
           
           // Mini line chart
-          SizedBox(
-            height: 80,
-            child: _buildMiniLineChart(context),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: _buildMiniLineChart(context),
+            ),
           ),
           
           const SizedBox(height: 12),
@@ -146,135 +149,19 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
   Widget _buildMiniLineChart(BuildContext context) {
     final chartData = _getChartData();
     
-    if (chartData.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Text(
-            'No data yet',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white54,
-            ),
-          ),
-        ),
-      );
-    }
-    
-    return LineChart(
-      LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(
-            axisNameWidget: Text(
-              'Volume (kg)',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white54,
-                fontSize: 10,
-              ),
-            ),
-            sideTitles: const SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 20,
-              interval: 1.0,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                
-                // Use switch-case pattern like official fl_chart examples
-                switch (_selectedTimeFrame) {
-                  case TimeFrame.weekly:
-                    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                    if (index >= 0 && index < days.length) {
-                      return Text(
-                        days[index],
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
-                          fontSize: 10,
-                        ),
-                      );
-                    }
-                    break;
-                  case TimeFrame.monthly:
-                    if (index >= 0 && index < 6) {
-                      return Text(
-                        'M${index + 1}',  // M1, M2, M3, M4, M5, M6 (oldest to newest)
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
-                          fontSize: 10,
-                        ),
-                      );
-                    }
-                    break;
-                  case TimeFrame.quarterly:
-                    final maxX = _getMaxXForTimeFrame().toInt();
-                    if (index >= 0 && index <= maxX) {
-                      return Text(
-                        'W${index + 1}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
-                          fontSize: 10,
-                        ),
-                      );
-                    }
-                    break;
-                }
-                return const Text('');
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: chartData,
-            color: const Color(0xFFFFB74D),
-            barWidth: 2.5,
-            isStrokeCapRound: true,
-            isCurved: true,
-            curveSmoothness: 0.35,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                radius: 3,
-                color: const Color(0xFFFFB74D),
-                strokeColor: const Color(0xFF2A2A2A),
-                strokeWidth: 1,
-              ),
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFFFFB74D).withOpacity(0.3),
-                  const Color(0xFFFFB74D).withOpacity(0.0),
-                ],
-              ),
-            ),
-          ),
-        ],
-        minX: 0,
-        maxX: _getMaxXForTimeFrame(),
-        minY: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
+    return SimpleLineChart(
+      data: chartData,
+      yAxisLabel: 'Volume (kg)',
+      xAxisLabels: _getXAxisLabels(),
+      lineColor: const Color(0xFFFFB74D),
+      fillColor: const Color(0xFFFFB74D).withOpacity(0.3),
+      backgroundColor: Colors.transparent,
     );
   }
 
-  List<FlSpot> _getChartData() {
+  List<ChartPoint> _getChartData() {
     final now = DateTime.now();
-    final spots = <FlSpot>[];
+    final points = <ChartPoint>[];
     
     switch (_selectedTimeFrame) {
       case TimeFrame.weekly:
@@ -288,7 +175,7 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
           ).firstOrNull;
           
           final volume = dayProgress?.totalVolume ?? 0.0;
-          spots.add(FlSpot(i.toDouble(), volume / 1000));
+          points.add(ChartPoint(i.toDouble(), volume / 1000));
         }
         break;
         
@@ -314,7 +201,7 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
           
           // Show as daily average for that month
           final dailyAverage = daysWithWorkouts > 0 ? monthVolume / daysWithWorkouts : 0.0;
-          spots.add(FlSpot((5 - i).toDouble(), dailyAverage / 1000));
+          points.add(ChartPoint((5 - i).toDouble(), dailyAverage / 1000));
         }
         break;
         
@@ -338,31 +225,30 @@ class _ProgressOverviewWidgetState extends State<ProgressOverviewWidget> {
             weekVolume += dayProgress?.totalVolume ?? 0.0;
           }
           
-          spots.add(FlSpot(i.toDouble(), weekVolume / 1000));
+          points.add(ChartPoint(i.toDouble(), weekVolume / 1000));
         }
         break;
     }
     
-    return spots;
+    return points;
   }
 
-  double _getMaxXForTimeFrame() {
+  List<String> _getXAxisLabels() {
     switch (_selectedTimeFrame) {
       case TimeFrame.weekly:
-        return 6;  // 7 days (0-6)
+        return ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
       case TimeFrame.monthly:
-        return 5.0; // 6 months (0-5)
+        return ['M1', 'M2', 'M3', 'M4', 'M5', 'M6'];
       case TimeFrame.quarterly:
-        // Calculate actual weeks from start of quarter to now (matching data generation logic)
         final now = DateTime.now();
         final startOfQuarter = DateTime(now.year, ((now.month - 1) ~/ 3) * 3 + 1, 1);
-        int actualWeeks = 0;
+        final labels = <String>[];
         for (int i = 0; i < 12; i++) {
           final date = startOfQuarter.add(Duration(days: i * 7));
           if (date.isAfter(now)) break;
-          actualWeeks++;
+          labels.add('W${i + 1}');
         }
-        return (actualWeeks - 1).toDouble(); // Last index
+        return labels;
     }
   }
 

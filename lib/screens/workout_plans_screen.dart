@@ -24,7 +24,7 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
   bool _isLoading = true;
   String _searchQuery = '';
   TemplateCategory? _selectedCategory;
-  bool _showFavoritesOnly = false;
+  final bool _showFavoritesOnly = false;
   
   // UI state
   late TabController _tabController;
@@ -347,7 +347,7 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
                             },
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),

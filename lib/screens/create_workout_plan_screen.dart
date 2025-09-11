@@ -30,8 +30,8 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
   bool _isLoading = false;
   bool _isSaving = false;
   List<Exercise> _availableExercises = [];
-  List<TemplateExercise> _selectedExercises = [];
-  Set<String> _selectedBodyParts = {};
+  final List<TemplateExercise> _selectedExercises = [];
+  final Set<String> _selectedBodyParts = {};
   String? _selectedBodyPart; // For filtering exercises
   
   // Form fields
@@ -504,7 +504,7 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<TemplateCategory>(
-              value: _category,
+              initialValue: _category,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 filled: true,
@@ -662,8 +662,7 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
             borderRadius: BorderRadius.circular(12),
           ),
           child: ListTile(
-            leading: exercise.gifUrl != null
-                ? ClipRRect(
+            leading: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       exercise.gifUrl!,
@@ -677,15 +676,6 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
                         child: const Icon(Icons.fitness_center, color: Colors.white60),
                       ),
                     ),
-                  )
-                : Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.fitness_center, color: Colors.white60),
                   ),
             title: Text(
               exercise.name,
