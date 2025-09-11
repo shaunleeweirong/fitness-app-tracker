@@ -54,6 +54,9 @@ dependencies:
   
   # Audio for timer notifications
   audioplayers: ^6.1.0
+  
+  # Local storage for caching recommendations
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:

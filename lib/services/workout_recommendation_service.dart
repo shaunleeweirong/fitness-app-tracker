@@ -1,32 +1,69 @@
 import '../models/workout.dart';
 import '../services/workout_template_repository.dart';
 import '../services/database_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 /// Service for recommending workouts to users based on various factors
 /// Provides intelligent workout suggestions for the homepage and other features
 class WorkoutRecommendationService {
   final WorkoutTemplateRepository _templateRepository = WorkoutTemplateRepository();
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  static const String _cacheKeyPrefix = 'recommendation_';
+  static const String _cacheReasonKeyPrefix = 'recommendation_reason_';
 
   /// Get a recommended workout for today based on user history and preferences
   Future<WorkoutTemplate?> getTodaysRecommendation() async {
     try {
+      // First, try to get cached recommendation for today
+      final cachedRecommendation = await _getCachedRecommendation();
+      if (cachedRecommendation != null) {
+        print('✅ Using cached recommendation: ${cachedRecommendation.name}');
+        return cachedRecommendation;
+      }
+      
+      print('📱 No cache found, loading fresh recommendation...');
+      
       final userId = await _dbHelper.createMockUser();
+      print('👤 Created/found user: $userId');
       
       // Get all available templates (both user-created and system templates)
+      print('🔍 Loading user templates...');
       final userTemplates = await _templateRepository.getTemplates(userId: userId);
+      print('📋 Found ${userTemplates.length} user templates');
+      
+      print('🔍 Loading system templates...');
       final systemTemplates = await _templateRepository.getTemplates(userId: 'system_templates');
+      print('📋 Found ${systemTemplates.length} system templates');
+      
+      if (systemTemplates.isNotEmpty) {
+        for (final template in systemTemplates) {
+          print('   📝 System template: ${template.name} (${template.category.name})');
+        }
+      }
+      
       final allTemplates = [...userTemplates, ...systemTemplates];
+      print('📊 Total templates available: ${allTemplates.length}');
       
       if (allTemplates.isEmpty) {
+        print('❌ No templates available for recommendation');
         return null;
       }
       
       // Apply recommendation logic
       final recommendation = await _selectRecommendedTemplate(allTemplates, userId);
+      print('🎯 Selected recommendation: ${recommendation?.name ?? 'None'}');
+      
+      // Cache the recommendation for today
+      if (recommendation != null) {
+        await _cacheRecommendation(recommendation);
+        print('💾 Cached recommendation: ${recommendation.name}');
+      }
+      
       return recommendation;
-    } catch (e) {
-      print('Error getting workout recommendation: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error getting workout recommendation: $e');
+      print('📚 Stack trace: $stackTrace');
       return null;
     }
   }
@@ -183,6 +220,153 @@ class WorkoutRecommendationService {
       return "Complete workout hitting all major muscles";
     } else {
       return "Recommended based on your training schedule";
+    }
+  }
+
+  /// Get today's date as cache key
+  String _getTodaysCacheKey() {
+    final today = DateTime.now();
+    return '$_cacheKeyPrefix${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+  }
+
+  String _getTodaysReasonCacheKey() {
+    final today = DateTime.now();
+    return '$_cacheReasonKeyPrefix${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Get cached recommendation for today
+  Future<WorkoutTemplate?> _getCachedRecommendation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getTodaysCacheKey();
+      print('🔍 Looking for cache key: $cacheKey');
+      
+      final cachedJson = prefs.getString(cacheKey);
+      
+      if (cachedJson != null) {
+        print('✅ Found cached data, length: ${cachedJson.length} chars');
+        print('📄 Cached JSON: ${cachedJson.substring(0, cachedJson.length > 200 ? 200 : cachedJson.length)}...');
+        
+        final cachedMap = jsonDecode(cachedJson) as Map<String, dynamic>;
+        print('📋 Decoded cache map keys: ${cachedMap.keys.toList()}');
+        
+        final template = WorkoutTemplate.fromMap(cachedMap);
+        print('✅ Successfully deserialized template: ${template.name}');
+        return template;
+      } else {
+        print('❌ No cached data found for key: $cacheKey');
+        // List all cache keys to see what's stored
+        final allKeys = prefs.getKeys();
+        final cacheKeys = allKeys.where((k) => k.startsWith(_cacheKeyPrefix)).toList();
+        print('📋 Available cache keys: $cacheKeys');
+      }
+      
+      return null;
+    } catch (e, stackTrace) {
+      print('❌ Error reading cached recommendation: $e');
+      print('📚 Stack trace: $stackTrace');
+      return null;
+    }
+  }
+
+  /// Cache recommendation for today
+  Future<void> _cacheRecommendation(WorkoutTemplate template) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getTodaysCacheKey();
+      final reasonCacheKey = _getTodaysReasonCacheKey();
+      
+      print('💾 Caching recommendation with key: $cacheKey');
+      print('📋 Template details: ${template.name} (${template.category.name})');
+      
+      // Cache the template
+      final templateMap = template.toMap();
+      print('🗃️ Template map keys: ${templateMap.keys.toList()}');
+      
+      final templateJson = jsonEncode(templateMap);
+      print('📝 JSON length: ${templateJson.length} chars');
+      print('📄 JSON preview: ${templateJson.substring(0, templateJson.length > 200 ? 200 : templateJson.length)}...');
+      
+      await prefs.setString(cacheKey, templateJson);
+      print('✅ Template cached successfully');
+      
+      // Cache the reason
+      final reason = getRecommendationReason(template);
+      await prefs.setString(reasonCacheKey, reason);
+      print('✅ Reason cached: $reason');
+      
+      // Clean up old cache entries (keep last 7 days)
+      await _cleanupOldCacheEntries();
+    } catch (e, stackTrace) {
+      print('❌ Error caching recommendation: $e');
+      print('📚 Stack trace: $stackTrace');
+    }
+  }
+
+  /// Get cached recommendation reason for today
+  Future<String?> getCachedRecommendationReason() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final reasonCacheKey = _getTodaysReasonCacheKey();
+      return prefs.getString(reasonCacheKey);
+    } catch (e) {
+      print('Error reading cached recommendation reason: $e');
+      return null;
+    }
+  }
+
+  /// Clean up old cache entries to prevent storage bloat
+  Future<void> _cleanupOldCacheEntries() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().toList();
+      final now = DateTime.now();
+      
+      for (final key in keys) {
+        if (key.startsWith(_cacheKeyPrefix) || key.startsWith(_cacheReasonKeyPrefix)) {
+          // Extract date from key (e.g., "recommendation_2025-09-11")
+          final datePart = key.split('_').last;
+          try {
+            final cacheDate = DateTime.parse(datePart);
+            final daysDifference = now.difference(cacheDate).inDays;
+            
+            // Remove entries older than 7 days
+            if (daysDifference > 7) {
+              await prefs.remove(key);
+              print('🧹 Cleaned up old cache entry: $key');
+            }
+          } catch (e) {
+            // Invalid date format, remove the key
+            await prefs.remove(key);
+            print('🧹 Cleaned up invalid cache entry: $key');
+          }
+        }
+      }
+    } catch (e) {
+      print('Error cleaning up cache: $e');
+    }
+  }
+
+  /// Clear today's recommendation cache (for testing or manual refresh)
+  Future<void> clearTodaysCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_getTodaysCacheKey());
+      await prefs.remove(_getTodaysReasonCacheKey());
+      print('🧹 Cleared today\'s recommendation cache');
+    } catch (e) {
+      print('Error clearing cache: $e');
+    }
+  }
+
+  /// DEBUG: Force fresh recommendation by bypassing cache
+  Future<WorkoutTemplate?> getDebugFreshRecommendation() async {
+    try {
+      await clearTodaysCache();
+      return await getTodaysRecommendation();
+    } catch (e) {
+      print('❌ Debug fresh recommendation failed: $e');
+      return null;
     }
   }
 

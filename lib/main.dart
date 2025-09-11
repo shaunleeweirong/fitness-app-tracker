@@ -262,6 +262,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   WorkoutTemplate? _recommendedWorkout;
   bool _isLoadingRecommendation = true;
   String _recommendationReason = '';
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
 
   @override
   void initState() {
@@ -277,23 +279,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadRecommendation() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingRecommendation = true;
+      });
+    }
+    
     try {
+      print('📱 Loading workout recommendation (attempt ${_retryCount + 1}/$_maxRetries)...');
       final recommendation = await _recommendationService.getTodaysRecommendation();
+      
       if (mounted) {
+        // Try to get cached reason first, then generate if not available
+        final cachedReason = await _recommendationService.getCachedRecommendationReason();
+        final reason = recommendation != null 
+            ? (cachedReason ?? _recommendationService.getRecommendationReason(recommendation))
+            : '';
+        
         setState(() {
           _recommendedWorkout = recommendation;
-          _recommendationReason = recommendation != null 
-              ? _recommendationService.getRecommendationReason(recommendation)
-              : '';
+          _recommendationReason = reason;
           _isLoadingRecommendation = false;
+          _retryCount = 0; // Reset retry count on success
         });
+        
+        print('✅ Recommendation loaded: ${recommendation?.name ?? 'No recommendation'}');
       }
     } catch (e) {
+      print('❌ Failed to load recommendation: $e');
+      
       if (mounted) {
+        if (_retryCount < _maxRetries - 1) {
+          _retryCount++;
+          print('🔄 Retrying recommendation load in 2 seconds...');
+          await Future.delayed(const Duration(seconds: 2));
+          if (mounted) {
+            await _loadRecommendation();
+            return;
+          }
+        }
+        
         setState(() {
           _isLoadingRecommendation = false;
         });
+        
+        // Try fallback recommendation as last resort
+        _loadFallbackRecommendation();
       }
+    }
+  }
+
+  Future<void> _loadFallbackRecommendation() async {
+    try {
+      print('🔄 Attempting fallback recommendation...');
+      final fallback = await _recommendationService.getFallbackRecommendation();
+      
+      if (mounted && fallback != null) {
+        setState(() {
+          _recommendedWorkout = fallback;
+          _recommendationReason = _recommendationService.getRecommendationReason(fallback);
+        });
+        print('✅ Fallback recommendation loaded: ${fallback.name}');
+      }
+    } catch (e) {
+      print('❌ Fallback recommendation also failed: $e');
+    }
+  }
+
+  Future<void> _refreshRecommendation() async {
+    print('🔄 Manual refresh triggered');
+    _retryCount = 0;
+    
+    // Clear cache and force fresh load for debugging
+    final freshRecommendation = await _recommendationService.getDebugFreshRecommendation();
+    
+    if (mounted) {
+      final reason = freshRecommendation != null 
+          ? _recommendationService.getRecommendationReason(freshRecommendation)
+          : '';
+      
+      setState(() {
+        _recommendedWorkout = freshRecommendation;
+        _recommendationReason = reason;
+        _isLoadingRecommendation = false;
+      });
     }
   }
 
@@ -314,8 +383,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
+          child: RefreshIndicator(
+            onRefresh: _refreshRecommendation,
+            color: const Color(0xFFFFB74D),
+            backgroundColor: const Color(0xFF1A1A1A),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(), // Enables pull-to-refresh even when content doesn't scroll
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Section
@@ -465,6 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 
                 const SizedBox(height: 100), // Bottom padding for navigation
               ],
+            ),
             ),
           ),
         ),
@@ -767,7 +842,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        
+        // Refresh hint row
+        Row(
+          children: [
+            Icon(
+              Icons.refresh,
+              size: 14,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Pull down to refresh for workout recommendations',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              onPressed: _refreshRecommendation,
+              icon: Icon(
+                Icons.refresh,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 8),
         
         // Action buttons row
         Row(

@@ -472,6 +472,184 @@ flutter run -d 5DA4B52F-5EF0-4C65-B044-80691655D7CE
 
 ---
 
+## Manual Testing Protocol
+
+### Critical Testing Areas
+Before making changes or validating fixes, follow these manual testing steps to ensure app stability and user experience.
+
+### 🧪 Recommendation System Testing (Home Tab)
+**Priority: HIGH** - Addresses inconsistent "Create Your Workout" vs recommended workout display
+
+#### Test Case 1: Fresh App Launch
+1. **Kill and restart** the Flutter app completely
+2. **Navigate to Home tab** (should be default)
+3. **Observe initial state:**
+   - ✅ **Expected:** Workout recommendation with template name, reason, and action buttons
+   - ❌ **Issue:** "Create Your Workout" fallback content appears instead
+   - 📝 **Log:** Check debug console for recommendation loading messages
+
+#### Test Case 2: Tab Navigation Consistency  
+1. **Start on Home tab** with successful recommendation
+2. **Navigate to other tabs:** History → Plans → Exercises → Progress
+3. **Return to Home tab**
+4. **Verify state persistence:**
+   - ✅ **Expected:** Same recommendation still displayed
+   - ❌ **Issue:** Fallback content appears or recommendation changes unexpectedly
+
+#### Test Case 3: Refresh Functionality (NEW)
+1. **Navigate to Home tab**
+2. **If fallback content shows:**
+   - **Pull down to refresh** (swipe down gesture)
+   - **Or tap small refresh icon** in fallback content
+3. **Verify refresh behavior:**
+   - ✅ **Expected:** Loading indicator → Recommendation appears
+   - 📝 **Log:** Check console for retry attempts and success/failure messages
+
+#### Test Case 4: Database Connection Recovery
+1. **Force database issues** (if possible, by rapidly switching tabs during startup)
+2. **Verify automatic retry:**
+   - ✅ **Expected:** Up to 3 automatic retries with 2-second delays
+   - ✅ **Expected:** Fallback recommendation attempts if main fails
+   - 📝 **Log:** Watch console for retry messages and fallback attempts
+
+### 🎯 Validation Questions for Changes
+**BEFORE IMPLEMENTING NEW FEATURES - ASK USER:**
+
+1. **"Can you test the Home tab recommendation consistency?"**
+   - Navigate between tabs 5-10 times
+   - Verify recommendation stays consistent
+   - Report if "Create Your Workout" appears when it shouldn't
+
+2. **"Does the pull-to-refresh work properly?"**
+   - Try pull-to-refresh gesture on Home tab
+   - Test manual refresh button in fallback content
+   - Confirm recommendations load after refresh
+
+3. **"Are there any console errors during recommendation loading?"**
+   - Check Flutter debug console during app startup
+   - Look for database connection errors or template loading failures
+   - Report any red error messages related to recommendations
+
+### 🔧 UI/UX Testing Protocol
+
+#### Navigation Flow Testing
+1. **Bottom Navigation Tabs:**
+   - Test all 5 tabs: Home, History, Plans, Exercises, Progress
+   - Verify smooth transitions without flickering
+   - Check that each tab loads content properly
+
+#### Layout Overflow Testing  
+1. **Progress Tab Body Silhouettes:**
+   - Navigate to Progress tab
+   - Verify no yellow/red overflow warnings
+   - Check that body silhouettes display properly without layout issues
+
+2. **Home Tab Responsive Layout:**
+   - Test on different screen orientations (if applicable)
+   - Verify workout cards display properly
+   - Check button layouts don't overflow
+
+#### Error State Testing
+1. **Network/Database Errors:**
+   - Test app behavior with poor connectivity simulation
+   - Verify graceful error handling and user feedback
+   - Check retry mechanisms work as expected
+
+### 📋 Testing Checklist Template
+
+**Before Code Changes:**
+- [ ] Home tab shows workout recommendations consistently
+- [ ] Tab navigation preserves Home tab state
+- [ ] No console errors during recommendation loading
+- [ ] Pull-to-refresh functionality works
+- [ ] No UI overflow errors in any tab
+
+**After Code Changes:**
+- [ ] Original functionality still works
+- [ ] New feature works as expected
+- [ ] No new console errors introduced
+- [ ] Performance remains smooth
+- [ ] UI layouts remain intact
+
+**Regression Testing:**
+- [ ] All 5 tabs still load properly
+- [ ] Database operations still function
+- [ ] App startup time acceptable
+- [ ] Memory usage reasonable (check iOS simulator debugger)
+
+### 🐛 Issue Reporting Format
+
+When reporting issues during testing, use this format:
+
+```markdown
+## Issue: [Brief Description]
+
+**Steps to Reproduce:**
+1. Step one
+2. Step two
+3. Step three
+
+**Expected Behavior:**
+[What should happen]
+
+**Actual Behavior:**  
+[What actually happens]
+
+**Console Output:**
+[Any relevant debug messages]
+
+**Device/Environment:**
+- iOS Simulator: iPhone 16 (5DA4B52F-5EF0-4C65-B044-80691655D7CE)
+- Flutter Version: [check with `flutter --version`]
+
+**Screenshots:**
+[If applicable]
+```
+
+### 🚀 Performance Testing
+
+#### Memory and Performance Checks
+1. **iOS Simulator Debug Menu:**
+   - **Instruments → Memory Usage** (check for leaks)
+   - **Debug → Slow Animations** (verify smooth transitions)
+   - **Debug → Color Blended Layers** (check rendering performance)
+
+2. **Flutter Performance:**
+   - **Hot Reload Speed:** Should be < 2 seconds
+   - **App Startup:** Should reach Home tab < 5 seconds
+   - **Tab Switching:** Should be instant with no noticeable lag
+
+#### Database Performance
+1. **Recommendation Loading:** Should complete < 3 seconds on first load
+2. **Template Loading:** Plans tab should load < 2 seconds
+3. **Exercise Search:** Should be real-time with no input lag
+
+---
+
+## Recent Bug Fixes & Manual Validation Required
+
+### ✅ Fixed: RenderFlex Overflow (Body Silhouettes)
+**Files:** `lib/widgets/body_silhouette.dart`
+**Fix:** Reduced width from 149px to 130px
+**Manual Test:** Navigate to Progress tab → Verify no overflow warnings
+
+### 🔄 NEW: Recommendation System Reliability 
+**Files:** `lib/main.dart` (DashboardScreen)
+**Fix:** Added retry logic, pull-to-refresh, AutomaticKeepAliveClientMixin
+**Manual Test Required:** 
+1. **Kill and restart app 3-5 times** → Verify recommendations load consistently
+2. **Navigate between tabs 10+ times** → Verify Home tab state persists  
+3. **Test pull-to-refresh** → Verify manual refresh works when fallback appears
+4. **Check console logs** → Verify retry attempts and success messages appear
+
+**USER VALIDATION NEEDED:** Please test the above scenarios and confirm:
+- ✅ Recommendations appear consistently on Home tab
+- ✅ Tab navigation doesn't cause fallback content to appear unexpectedly  
+- ✅ Pull-to-refresh resolves stuck "Create Your Workout" states
+- ✅ Console shows successful recommendation loading messages
+
+---
+
 ## Design Principles & Security
 
 ### UI/UX Guidelines
