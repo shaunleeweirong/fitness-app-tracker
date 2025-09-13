@@ -15,7 +15,7 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static const String _databaseName = 'fitness_tracker.db';
-  static const int _databaseVersion = 3;
+  static const int _databaseVersion = 4;
 
   // Table names
   static const String tableWorkouts = 'workouts';
@@ -30,6 +30,11 @@ class DatabaseHelper {
   
   // Personal records table name
   static const String tablePersonalRecords = 'personal_records';
+  
+  // User workout customization table names
+  static const String tableUserWorkouts = 'user_workouts';
+  static const String tableUserWorkoutExercises = 'user_workout_exercises';
+  static const String tableUserWorkoutModifications = 'user_workout_modifications';
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -178,6 +183,63 @@ class DatabaseHelper {
       )
     ''');
 
+    print('📋 [DB_SETUP] Creating user workout customization tables...');
+    
+    // Create user workouts table (customized from templates)
+    await db.execute('''
+      CREATE TABLE $tableUserWorkouts (
+        user_workout_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        base_template_id TEXT,
+        name TEXT NOT NULL,
+        target_body_parts TEXT,
+        planned_duration_minutes INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        last_used_at TEXT,
+        usage_count INTEGER DEFAULT 0,
+        source INTEGER NOT NULL,
+        notes TEXT,
+        FOREIGN KEY (user_id) REFERENCES $tableUsers (user_id) ON DELETE CASCADE,
+        FOREIGN KEY (base_template_id) REFERENCES $tableWorkoutTemplates (template_id) ON DELETE SET NULL
+      )
+    ''');
+
+    // Create user workout exercises table
+    await db.execute('''
+      CREATE TABLE $tableUserWorkoutExercises (
+        user_exercise_id TEXT PRIMARY KEY,
+        user_workout_id TEXT NOT NULL,
+        exercise_id TEXT NOT NULL,
+        exercise_name TEXT NOT NULL,
+        body_parts TEXT,
+        order_index INTEGER NOT NULL,
+        suggested_sets INTEGER DEFAULT 3,
+        suggested_reps_min INTEGER DEFAULT 8,
+        suggested_reps_max INTEGER DEFAULT 12,
+        suggested_weight REAL,
+        rest_time_seconds INTEGER DEFAULT 90,
+        notes TEXT,
+        is_from_template INTEGER DEFAULT 0,
+        source_template_exercise_id TEXT,
+        FOREIGN KEY (user_workout_id) REFERENCES $tableUserWorkouts (user_workout_id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create user workout modifications table
+    await db.execute('''
+      CREATE TABLE $tableUserWorkoutModifications (
+        modification_id TEXT PRIMARY KEY,
+        user_workout_id TEXT NOT NULL,
+        modification_type TEXT NOT NULL,
+        exercise_id TEXT NOT NULL,
+        modified_at TEXT NOT NULL,
+        modification_data TEXT,
+        FOREIGN KEY (user_workout_id) REFERENCES $tableUserWorkouts (user_workout_id) ON DELETE CASCADE
+      )
+    ''');
+    
+    print('✅ [DB_SETUP] User workout tables created successfully');
+
     // Create indexes for better query performance
     await _createIndexes(db);
   }
@@ -211,6 +273,14 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_personal_records_user_id ON $tablePersonalRecords (user_id)');
     await db.execute('CREATE INDEX idx_personal_records_exercise ON $tablePersonalRecords (exercise_id, type)');
     await db.execute('CREATE INDEX idx_personal_records_achieved_at ON $tablePersonalRecords (achieved_at DESC)');
+    
+    // User workout indexes
+    await db.execute('CREATE INDEX idx_user_workouts_user_id ON $tableUserWorkouts (user_id)');
+    await db.execute('CREATE INDEX idx_user_workouts_template_id ON $tableUserWorkouts (base_template_id)');
+    await db.execute('CREATE INDEX idx_user_workouts_created_at ON $tableUserWorkouts (created_at DESC)');
+    await db.execute('CREATE INDEX idx_user_workout_exercises_workout_id ON $tableUserWorkoutExercises (user_workout_id)');
+    await db.execute('CREATE INDEX idx_user_workout_exercises_order ON $tableUserWorkoutExercises (user_workout_id, order_index)');
+    await db.execute('CREATE INDEX idx_user_workout_modifications_workout_id ON $tableUserWorkoutModifications (user_workout_id)');
   }
 
   /// Handle database upgrades for future versions
@@ -287,6 +357,74 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX idx_personal_records_user_id ON $tablePersonalRecords (user_id)');
       await db.execute('CREATE INDEX idx_personal_records_exercise ON $tablePersonalRecords (exercise_id, type)');
       await db.execute('CREATE INDEX idx_personal_records_achieved_at ON $tablePersonalRecords (achieved_at DESC)');
+    }
+
+    if (oldVersion < 4) {
+      // Add user workout customization tables in version 4
+      print('📋 [DB_UPGRADE] Adding user workout customization tables...');
+      
+      // Create user workouts table (customized from templates)
+      await db.execute('''
+        CREATE TABLE $tableUserWorkouts (
+          user_workout_id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          base_template_id TEXT,
+          name TEXT NOT NULL,
+          target_body_parts TEXT,
+          planned_duration_minutes INTEGER NOT NULL,
+          created_at TEXT NOT NULL,
+          last_used_at TEXT,
+          usage_count INTEGER DEFAULT 0,
+          source INTEGER NOT NULL,
+          notes TEXT,
+          FOREIGN KEY (user_id) REFERENCES $tableUsers (user_id) ON DELETE CASCADE,
+          FOREIGN KEY (base_template_id) REFERENCES $tableWorkoutTemplates (template_id) ON DELETE SET NULL
+        )
+      ''');
+
+      // Create user workout exercises table
+      await db.execute('''
+        CREATE TABLE $tableUserWorkoutExercises (
+          user_exercise_id TEXT PRIMARY KEY,
+          user_workout_id TEXT NOT NULL,
+          exercise_id TEXT NOT NULL,
+          exercise_name TEXT NOT NULL,
+          body_parts TEXT,
+          order_index INTEGER NOT NULL,
+          suggested_sets INTEGER DEFAULT 3,
+          suggested_reps_min INTEGER DEFAULT 8,
+          suggested_reps_max INTEGER DEFAULT 12,
+          suggested_weight REAL,
+          rest_time_seconds INTEGER DEFAULT 90,
+          notes TEXT,
+          is_from_template INTEGER DEFAULT 0,
+          source_template_exercise_id TEXT,
+          FOREIGN KEY (user_workout_id) REFERENCES $tableUserWorkouts (user_workout_id) ON DELETE CASCADE
+        )
+      ''');
+
+      // Create user workout modifications table
+      await db.execute('''
+        CREATE TABLE $tableUserWorkoutModifications (
+          modification_id TEXT PRIMARY KEY,
+          user_workout_id TEXT NOT NULL,
+          modification_type TEXT NOT NULL,
+          exercise_id TEXT NOT NULL,
+          modified_at TEXT NOT NULL,
+          modification_data TEXT,
+          FOREIGN KEY (user_workout_id) REFERENCES $tableUserWorkouts (user_workout_id) ON DELETE CASCADE
+        )
+      ''');
+
+      // Create indexes for user workout tables
+      await db.execute('CREATE INDEX idx_user_workouts_user_id ON $tableUserWorkouts (user_id)');
+      await db.execute('CREATE INDEX idx_user_workouts_template_id ON $tableUserWorkouts (base_template_id)');
+      await db.execute('CREATE INDEX idx_user_workouts_created_at ON $tableUserWorkouts (created_at DESC)');
+      await db.execute('CREATE INDEX idx_user_workout_exercises_workout_id ON $tableUserWorkoutExercises (user_workout_id)');
+      await db.execute('CREATE INDEX idx_user_workout_exercises_order ON $tableUserWorkoutExercises (user_workout_id, order_index)');
+      await db.execute('CREATE INDEX idx_user_workout_modifications_workout_id ON $tableUserWorkoutModifications (user_workout_id)');
+      
+      print('✅ [DB_UPGRADE] User workout tables created successfully');
     }
   }
 

@@ -57,14 +57,36 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
   }
 
   Future<void> _loadWorkout() async {
+    print('🏋️ [LOGGING] Loading workout with ID: ${widget.workoutId}');
+    
     try {
       final workout = await _workoutRepository.getWorkout(widget.workoutId);
       if (workout == null) {
+        print('🏋️ [LOGGING] ERROR: Workout not found with ID: ${widget.workoutId}');
         if (mounted) {
           setState(() => _isLoading = false);
           _showError('Workout not found');
         }
         return;
+      }
+      
+      print('🏋️ [LOGGING] Workout loaded successfully:');
+      print('🏋️ [LOGGING]   Name: ${workout.name}');
+      print('🏋️ [LOGGING]   Status: ${workout.status}');
+      print('🏋️ [LOGGING]   Target body parts: ${workout.targetBodyParts}');
+      print('🏋️ [LOGGING]   Duration: ${workout.plannedDurationMinutes} minutes');
+      print('🏋️ [LOGGING]   Template exercises count: ${workout.exercises.length}');
+      
+      // Log template exercises that came with the workout
+      if (workout.exercises.isNotEmpty) {
+        print('🏋️ [LOGGING] Template exercises in workout:');
+        for (var i = 0; i < workout.exercises.length; i++) {
+          final exercise = workout.exercises[i];
+          print('🏋️ [LOGGING]   Exercise $i: ${exercise.exerciseName} (${exercise.bodyParts.join(", ")})');
+          print('🏋️ [LOGGING]     Current sets logged: ${exercise.sets.length}');
+        }
+      } else {
+        print('🏋️ [LOGGING] No template exercises in workout - will load dynamically');
       }
       
       if (mounted) {
@@ -76,6 +98,7 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
       
       // Start the workout if it's still planned
       if (workout.status == WorkoutStatus.planned) {
+        print('🏋️ [LOGGING] Starting workout (changing status from planned to in-progress)');
         await _workoutRepository.startWorkout(widget.workoutId);
         if (mounted) {
           setState(() {
@@ -85,12 +108,16 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
             );
           });
         }
+        print('🏋️ [LOGGING] Workout started at: ${DateTime.now()}');
+      } else {
+        print('🏋️ [LOGGING] Workout status is ${workout.status} - not starting');
       }
       
       // Load exercises for the target body parts
       _loadAvailableExercises();
       
     } catch (e) {
+      print('🏋️ [LOGGING] ERROR loading workout: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         _showError('Failed to load workout: $e');
@@ -99,7 +126,14 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
   }
 
   Future<void> _loadAvailableExercises() async {
-    if (_workout == null || !mounted) return;
+    if (_workout == null || !mounted) {
+      print('🏋️ [LOGGING] Cannot load exercises - workout is null or widget not mounted');
+      return;
+    }
+    
+    print('🏋️ [LOGGING] Loading available exercises...');
+    print('🏋️ [LOGGING] Template exercises in workout: ${_workout!.exercises.length}');
+    print('🏋️ [LOGGING] Target body parts: ${_workout!.targetBodyParts}');
     
     if (mounted) {
       setState(() => _isLoadingExercises = true);
@@ -108,19 +142,66 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
     try {
       List<Exercise> exercises = [];
       
-      // Load exercises for each target body part
-      for (final bodyPart in _workout!.targetBodyParts) {
-        final bodyPartExercises = await _exerciseService.getExercises(
-          bodyPart: bodyPart,
-          limit: 20,
-        );
-        exercises.addAll(bodyPartExercises);
+      // PRIORITY 1: Use template exercises if available
+      if (_workout!.exercises.isNotEmpty) {
+        print('🏋️ [LOGGING] ✅ FIXED: Using template exercises (${_workout!.exercises.length} exercises)');
+        
+        // Load Exercise details for each template exercise
+        for (final workoutExercise in _workout!.exercises) {
+          try {
+            final exercise = await _exerciseService.getExerciseById(workoutExercise.exerciseId);
+            if (exercise != null) {
+              exercises.add(exercise);
+              print('🏋️ [LOGGING] ✅ Loaded template exercise: ${exercise.name}');
+            } else {
+              print('🏋️ [LOGGING] ⚠️ Template exercise not found: ${workoutExercise.exerciseId}');
+            }
+          } catch (e) {
+            print('🏋️ [LOGGING] ❌ Error loading template exercise ${workoutExercise.exerciseId}: $e');
+          }
+        }
+        
+        print('🏋️ [LOGGING] ✅ Successfully loaded ${exercises.length} template exercises');
+        
+      } else {
+        // FALLBACK: Load exercises dynamically by body part (original behavior)
+        print('🏋️ [LOGGING] 📋 FALLBACK: No template exercises, loading dynamically by body part');
+        
+        for (final bodyPart in _workout!.targetBodyParts) {
+          print('🏋️ [LOGGING] Loading exercises for body part: $bodyPart');
+          final bodyPartExercises = await _exerciseService.getExercises(
+            bodyPart: bodyPart,
+            limit: 20,
+          );
+          print('🏋️ [LOGGING] Found ${bodyPartExercises.length} exercises for $bodyPart');
+          exercises.addAll(bodyPartExercises);
+        }
       }
       
       // Remove duplicates and sort by popularity
       final exerciseMap = <String, Exercise>{};
       for (final exercise in exercises) {
         exerciseMap[exercise.exerciseId] = exercise;
+      }
+      
+      print('🏋️ [LOGGING] Total unique exercises loaded: ${exerciseMap.length}');
+      
+      // Verify template vs loaded exercises alignment
+      if (_workout!.exercises.isNotEmpty) {
+        final templateExerciseIds = _workout!.exercises.map((e) => e.exerciseId).toSet();
+        final loadedExerciseIds = exerciseMap.keys.toSet();
+        
+        final missingFromLoaded = templateExerciseIds.difference(loadedExerciseIds);
+        final matchingExercises = templateExerciseIds.intersection(loadedExerciseIds);
+        
+        if (missingFromLoaded.isEmpty) {
+          print('🏋️ [LOGGING] ✅ SUCCESS: All ${_workout!.exercises.length} template exercises loaded successfully');
+        } else {
+          print('🏋️ [LOGGING] ⚠️ WARNING: ${missingFromLoaded.length} template exercises failed to load: $missingFromLoaded');
+          print('🏋️ [LOGGING] ✅ SUCCESS: ${matchingExercises.length} template exercises loaded successfully');
+        }
+      } else {
+        print('🏋️ [LOGGING] 📋 FALLBACK: Loaded ${exerciseMap.length} exercises dynamically by body part');
       }
       
       if (mounted) {
@@ -131,7 +212,10 @@ class _WorkoutLoggingScreenState extends State<WorkoutLoggingScreen> {
         });
       }
       
+      print('🏋️ [LOGGING] Available exercises loaded and set in state');
+      
     } catch (e) {
+      print('🏋️ [LOGGING] ERROR loading exercises: $e');
       if (mounted) {
         setState(() => _isLoadingExercises = false);
         _showError('Failed to load exercises: $e');

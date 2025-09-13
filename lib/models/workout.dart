@@ -714,3 +714,369 @@ class TemplateExercise {
     );
   }
 }
+
+/// Represents a user's customized workout that preserves template references
+/// This implements Option 1: Create Personal Copy approach for template preservation
+class UserWorkout {
+  final String userWorkoutId;
+  final String userId;
+  final String name;
+  final String? baseTemplateId;          // Reference to original template
+  final List<String> targetBodyParts;
+  final int plannedDurationMinutes;
+  final DateTime createdAt;
+  final DateTime? lastUsedAt;
+  final int usageCount;
+  final WorkoutSource source;
+  final List<UserExercise> exercises;    // Customized exercise list
+  final WorkoutCustomizations? modifications; // Track changes from template
+  final String? notes;
+
+  const UserWorkout({
+    required this.userWorkoutId,
+    required this.userId,
+    required this.name,
+    this.baseTemplateId,
+    required this.targetBodyParts,
+    required this.plannedDurationMinutes,
+    required this.createdAt,
+    this.lastUsedAt,
+    this.usageCount = 0,
+    required this.source,
+    this.exercises = const [],
+    this.modifications,
+    this.notes,
+  });
+
+  /// Create UserWorkout from WorkoutTemplate with customizations
+  factory UserWorkout.fromTemplate(
+    WorkoutTemplate template, {
+    required String userId,
+    String? customName,
+    List<UserExercise>? customExercises,
+    WorkoutCustomizations? modifications,
+  }) {
+    print('🆕 [USER_WORKOUT] Creating user workout from template...');
+    print('🆕 [USER_WORKOUT] Base template: ${template.name} (${template.templateId})');
+    print('🆕 [USER_WORKOUT] User ID: $userId');
+    
+    final generatedName = customName ?? _generateCustomName(template.name);
+    print('🆕 [USER_WORKOUT] Generated name: $generatedName');
+    
+    final exercises = customExercises ?? template.exercises.map((templateExercise) => 
+      UserExercise.fromTemplateExercise(templateExercise)).toList();
+    
+    print('🆕 [USER_WORKOUT] Final exercise count: ${exercises.length}');
+    
+    return UserWorkout(
+      userWorkoutId: 'user_workout_${DateTime.now().millisecondsSinceEpoch}',
+      userId: userId,
+      name: generatedName,
+      baseTemplateId: template.templateId,
+      targetBodyParts: List.from(template.targetBodyParts),
+      plannedDurationMinutes: template.estimatedDurationMinutes ?? 45,
+      createdAt: DateTime.now(),
+      source: modifications != null ? WorkoutSource.userModified : WorkoutSource.fromTemplate,
+      exercises: exercises,
+      modifications: modifications,
+    );
+  }
+
+  /// Create completely custom UserWorkout (not from template)
+  factory UserWorkout.custom({
+    required String userId,
+    required String name,
+    required List<String> targetBodyParts,
+    required int plannedDurationMinutes,
+    List<UserExercise> exercises = const [],
+    String? notes,
+  }) {
+    print('🆕 [USER_WORKOUT] Creating custom user workout...');
+    print('🆕 [USER_WORKOUT] Name: $name');
+    print('🆕 [USER_WORKOUT] Target body parts: $targetBodyParts');
+    
+    return UserWorkout(
+      userWorkoutId: 'user_workout_${DateTime.now().millisecondsSinceEpoch}',
+      userId: userId,
+      name: name,
+      targetBodyParts: targetBodyParts,
+      plannedDurationMinutes: plannedDurationMinutes,
+      createdAt: DateTime.now(),
+      source: WorkoutSource.userCustom,
+      exercises: exercises,
+      notes: notes,
+    );
+  }
+
+  /// Convert UserWorkout to standard Workout for execution
+  Workout toWorkout() {
+    print('🔄 [USER_WORKOUT] Converting user workout to executable workout...');
+    print('🔄 [USER_WORKOUT] User workout: $name');
+    print('🔄 [USER_WORKOUT] Exercise count: ${exercises.length}');
+    
+    return Workout(
+      workoutId: 'workout_${DateTime.now().millisecondsSinceEpoch}',
+      userId: userId,
+      name: name,
+      targetBodyParts: List.from(targetBodyParts),
+      plannedDurationMinutes: plannedDurationMinutes,
+      createdAt: DateTime.now(),
+      status: WorkoutStatus.planned,
+      exercises: exercises.map((userExercise) => userExercise.toWorkoutExercise()).toList(),
+      notes: notes,
+    );
+  }
+
+  /// Generate custom name for modified templates
+  static String _generateCustomName(String templateName) {
+    return 'My $templateName';
+  }
+
+  /// Check if this workout has modifications from original template
+  bool get hasModifications => modifications != null && modifications!.hasChanges;
+
+  /// Get summary of modifications
+  String get modificationSummary {
+    if (!hasModifications) return 'No changes from template';
+    
+    final mod = modifications!;
+    final changes = <String>[];
+    
+    if (mod.removedExerciseIds.isNotEmpty) {
+      changes.add('${mod.removedExerciseIds.length} removed');
+    }
+    if (mod.addedExercises.isNotEmpty) {
+      changes.add('${mod.addedExercises.length} added');
+    }
+    if (mod.modifiedExercises.isNotEmpty) {
+      changes.add('${mod.modifiedExercises.length} modified');
+    }
+    
+    return changes.join(', ');
+  }
+
+  /// Create copy with updated fields
+  UserWorkout copyWith({
+    String? name,
+    List<String>? targetBodyParts,
+    int? plannedDurationMinutes,
+    List<UserExercise>? exercises,
+    WorkoutCustomizations? modifications,
+    String? notes,
+  }) {
+    return UserWorkout(
+      userWorkoutId: userWorkoutId,
+      userId: userId,
+      name: name ?? this.name,
+      baseTemplateId: baseTemplateId,
+      targetBodyParts: targetBodyParts ?? this.targetBodyParts,
+      plannedDurationMinutes: plannedDurationMinutes ?? this.plannedDurationMinutes,
+      createdAt: createdAt,
+      lastUsedAt: lastUsedAt,
+      usageCount: usageCount,
+      source: source,
+      exercises: exercises ?? this.exercises,
+      modifications: modifications ?? this.modifications,
+      notes: notes ?? this.notes,
+    );
+  }
+}
+
+/// Represents the source/origin of a workout
+enum WorkoutSource {
+  systemTemplate,    // Direct from system template (unmodified)
+  fromTemplate,      // Created from template but no modifications
+  userModified,      // Modified from template
+  userCustom,        // Built from scratch by user
+}
+
+/// Tracks customizations made to a template
+class WorkoutCustomizations {
+  final List<String> removedExerciseIds;
+  final List<UserExercise> addedExercises;
+  final Map<String, ExerciseModification> modifiedExercises;
+  final DateTime modifiedAt;
+
+  const WorkoutCustomizations({
+    this.removedExerciseIds = const [],
+    this.addedExercises = const [],
+    this.modifiedExercises = const {},
+    required this.modifiedAt,
+  });
+
+  /// Check if there are any modifications
+  bool get hasChanges => 
+    removedExerciseIds.isNotEmpty || 
+    addedExercises.isNotEmpty || 
+    modifiedExercises.isNotEmpty;
+
+  /// Get total number of changes
+  int get changeCount => 
+    removedExerciseIds.length + 
+    addedExercises.length + 
+    modifiedExercises.length;
+}
+
+/// Represents modifications to a specific exercise
+class ExerciseModification {
+  final String exerciseId;
+  final int? newSets;
+  final int? newRepsMin;
+  final int? newRepsMax;
+  final double? newWeight;
+  final int? newRestTime;
+  final int? newOrderIndex;
+  final DateTime modifiedAt;
+
+  const ExerciseModification({
+    required this.exerciseId,
+    this.newSets,
+    this.newRepsMin,
+    this.newRepsMax,
+    this.newWeight,
+    this.newRestTime,
+    this.newOrderIndex,
+    required this.modifiedAt,
+  });
+}
+
+/// User's customizable version of an exercise
+class UserExercise {
+  final String userExerciseId;
+  final String exerciseId;
+  final String exerciseName;
+  final List<String> bodyParts;
+  final int orderIndex;
+  final int suggestedSets;
+  final int suggestedRepsMin;
+  final int suggestedRepsMax;
+  final double? suggestedWeight;
+  final int restTimeSeconds;
+  final String? notes;
+  final bool isFromTemplate;    // Track if this came from a template
+  final String? sourceTemplateExerciseId; // Reference to original template exercise
+
+  const UserExercise({
+    required this.userExerciseId,
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.bodyParts,
+    required this.orderIndex,
+    this.suggestedSets = 3,
+    this.suggestedRepsMin = 8,
+    this.suggestedRepsMax = 12,
+    this.suggestedWeight,
+    this.restTimeSeconds = 90,
+    this.notes,
+    this.isFromTemplate = false,
+    this.sourceTemplateExerciseId,
+  });
+
+  /// Create UserExercise from TemplateExercise
+  factory UserExercise.fromTemplateExercise(TemplateExercise templateExercise) {
+    print('🔄 [USER_EXERCISE] Converting template exercise: ${templateExercise.exerciseName}');
+    
+    return UserExercise(
+      userExerciseId: 'user_ex_${DateTime.now().millisecondsSinceEpoch}_${templateExercise.orderIndex}',
+      exerciseId: templateExercise.exerciseId,
+      exerciseName: templateExercise.exerciseName,
+      bodyParts: List.from(templateExercise.bodyParts),
+      orderIndex: templateExercise.orderIndex,
+      suggestedSets: templateExercise.suggestedSets,
+      suggestedRepsMin: templateExercise.suggestedRepsMin,
+      suggestedRepsMax: templateExercise.suggestedRepsMax,
+      suggestedWeight: templateExercise.suggestedWeight,
+      restTimeSeconds: templateExercise.restTimeSeconds,
+      notes: templateExercise.notes,
+      isFromTemplate: true,
+      sourceTemplateExerciseId: templateExercise.templateExerciseId,
+    );
+  }
+
+  /// Create custom UserExercise (not from template)
+  factory UserExercise.custom({
+    required String exerciseId,
+    required String exerciseName,
+    required List<String> bodyParts,
+    required int orderIndex,
+    int suggestedSets = 3,
+    int suggestedRepsMin = 8,
+    int suggestedRepsMax = 12,
+    double? suggestedWeight,
+    int restTimeSeconds = 90,
+    String? notes,
+  }) {
+    print('➕ [USER_EXERCISE] Creating custom exercise: $exerciseName');
+    
+    return UserExercise(
+      userExerciseId: 'user_ex_${DateTime.now().millisecondsSinceEpoch}_$orderIndex',
+      exerciseId: exerciseId,
+      exerciseName: exerciseName,
+      bodyParts: bodyParts,
+      orderIndex: orderIndex,
+      suggestedSets: suggestedSets,
+      suggestedRepsMin: suggestedRepsMin,
+      suggestedRepsMax: suggestedRepsMax,
+      suggestedWeight: suggestedWeight,
+      restTimeSeconds: restTimeSeconds,
+      notes: notes,
+      isFromTemplate: false,
+    );
+  }
+
+  /// Convert to WorkoutExercise for actual workout execution
+  WorkoutExercise toWorkoutExercise() {
+    return WorkoutExercise(
+      exerciseId: exerciseId,
+      exerciseName: exerciseName,
+      bodyParts: List.from(bodyParts),
+      sets: [], // Sets will be added during workout
+      notes: notes,
+      orderIndex: orderIndex,
+      workoutId: '', // Will be set when added to workout
+    );
+  }
+
+  /// Get rep range as formatted string
+  String get repsRange {
+    if (suggestedRepsMin == suggestedRepsMax) {
+      return '$suggestedRepsMin reps';
+    }
+    return '$suggestedRepsMin-$suggestedRepsMax reps';
+  }
+
+  /// Get weight as formatted string
+  String get weightDisplay {
+    if (suggestedWeight == null) return '';
+    return suggestedWeight! % 1 == 0
+        ? '${suggestedWeight!.toInt()}kg'
+        : '${suggestedWeight}kg';
+  }
+
+  /// Create copy with updated fields
+  UserExercise copyWith({
+    int? orderIndex,
+    int? suggestedSets,
+    int? suggestedRepsMin,
+    int? suggestedRepsMax,
+    double? suggestedWeight,
+    int? restTimeSeconds,
+    String? notes,
+  }) {
+    return UserExercise(
+      userExerciseId: userExerciseId,
+      exerciseId: exerciseId,
+      exerciseName: exerciseName,
+      bodyParts: bodyParts,
+      orderIndex: orderIndex ?? this.orderIndex,
+      suggestedSets: suggestedSets ?? this.suggestedSets,
+      suggestedRepsMin: suggestedRepsMin ?? this.suggestedRepsMin,
+      suggestedRepsMax: suggestedRepsMax ?? this.suggestedRepsMax,
+      suggestedWeight: suggestedWeight ?? this.suggestedWeight,
+      restTimeSeconds: restTimeSeconds ?? this.restTimeSeconds,
+      notes: notes ?? this.notes,
+      isFromTemplate: isFromTemplate,
+      sourceTemplateExerciseId: sourceTemplateExerciseId,
+    );
+  }
+}
