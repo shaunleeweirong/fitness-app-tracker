@@ -633,20 +633,95 @@ When reporting issues during testing, use this format:
 **Fix:** Reduced width from 149px to 130px
 **Manual Test:** Navigate to Progress tab → Verify no overflow warnings
 
-### 🔄 NEW: Recommendation System Reliability 
-**Files:** `lib/main.dart` (DashboardScreen)
-**Fix:** Added retry logic, pull-to-refresh, AutomaticKeepAliveClientMixin
-**Manual Test Required:** 
-1. **Kill and restart app 3-5 times** → Verify recommendations load consistently
-2. **Navigate between tabs 10+ times** → Verify Home tab state persists  
-3. **Test pull-to-refresh** → Verify manual refresh works when fallback appears
-4. **Check console logs** → Verify retry attempts and success messages appear
+### ✅ Fixed: Recommendation System Persistence (SharedPreferences Caching)
+**Files:** `lib/services/workout_recommendation_service.dart`, `lib/main.dart`, `pubspec.yaml`
+**Fix:** Implemented SharedPreferences-based caching with comprehensive debug logging
+**Changes:**
+- Added `shared_preferences: ^2.2.2` dependency
+- Cache recommendations with date-based keys (`recommendation_YYYY-MM-DD`)
+- Removed ineffective AutomaticKeepAliveClientMixin
+- Added pull-to-refresh functionality with RefreshIndicator
+- Comprehensive debug logging for troubleshooting cache serialization
+- Automatic cache cleanup (7-day retention)
 
-**USER VALIDATION NEEDED:** Please test the above scenarios and confirm:
-- ✅ Recommendations appear consistently on Home tab
-- ✅ Tab navigation doesn't cause fallback content to appear unexpectedly  
-- ✅ Pull-to-refresh resolves stuck "Create Your Workout" states
-- ✅ Console shows successful recommendation loading messages
+**Manual Test Required:** 
+1. **Kill and restart app 3-5 times** → Should show cached recommendations instantly
+2. **Navigate between tabs 10+ times** → Home tab should always show today's recommendation  
+3. **Test pull-to-refresh and manual refresh button** → Should trigger debug logging
+4. **Check console logs** → Look for cache hit/miss messages and template loading details
+
+**Debug Console Output to Monitor:**
+```
+✅ Using cached recommendation: [Template Name]
+📱 No cache found, loading fresh recommendation...
+👤 Created/found user: mock_user_1
+📋 Found X system templates
+🎯 Selected recommendation: [Template Name]
+💾 Cached recommendation: [Template Name]
+```
+
+**USER VALIDATION NEEDED:** Please test and share console output showing:
+- ✅ Cache hit messages on subsequent app launches
+- ✅ Template loading success (not 0 system templates)
+- ✅ No "Create Your Workout" fallback during normal navigation  
+- ✅ Successful recommendation selection and caching
+
+---
+
+## Recommendation Algorithm Documentation
+
+### How "Today's Recommendation" Is Determined
+
+The workout recommendation system uses a **day-of-week rotation strategy** with usage-based selection for variety.
+
+#### **Day-Based Workout Categories**
+```dart
+Monday:    Push/Upper Body     // Start week strong
+Tuesday:   Legs/Lower Body     // Foundation building  
+Wednesday: Pull/Upper Body     // Mid-week back focus
+Thursday:  Full Body/Strength  // Balanced training
+Friday:    Push/Upper Body     // End week strong
+Saturday:  Full Body/Cardio    // Weekend warrior
+Sunday:    Pull/Full Body      // Active recovery
+```
+
+#### **Selection Process**
+1. **Get today's day of week** (1=Monday, 7=Sunday)
+2. **Lookup preferred categories** for that day
+3. **Find templates matching those categories** from available system/user templates
+4. **Sort by usage count** (ascending - least used first)
+5. **Return the least-used template** in preferred category for variety
+
+#### **Fallback Logic**
+- If no templates match today's preferred categories → try any available template
+- If no templates exist at all → return `null` → shows "Create Your Workout" fallback
+- Fallback recommendation method tries `fullBody` or `push` categories as safe defaults
+
+#### **Why "Create Your Workout" Appears**
+The fallback content appears when:
+1. **No system templates seeded** - Template seeding failed during user creation
+2. **Category mismatch** - Templates exist but don't match any expected categories
+3. **Database connection issues** - Template loading fails completely
+4. **Cache deserialization failure** - SharedPreferences data corruption
+
+#### **System Template Categories Expected**
+The default templates should include:
+- `TemplateCategory.push` (Chest, Shoulders, Triceps)
+- `TemplateCategory.pull` (Back, Biceps) 
+- `TemplateCategory.legs` (Quads, Glutes, Hamstrings)
+- `TemplateCategory.fullBody` (Compound movements)
+- `TemplateCategory.upperBody` (Arms, chest, back)
+- `TemplateCategory.lowerBody` (Legs, glutes)
+
+#### **Debug Console Verification**
+To verify the algorithm is working:
+```
+📋 Found X system templates           // Should be > 0
+📝 System template: [Name] (push)     // Should show various categories
+🎯 Selected recommendation: [Name]    // Should match today's preferred category
+```
+
+If you see `📋 Found 0 system templates`, the issue is template seeding, not the recommendation algorithm.
 
 ---
 
