@@ -15,25 +15,28 @@ Weight lifters (beginners to advanced), fitness enthusiasts seeking structured p
 
 ## Current Status & Major Accomplishments
 
-### ✅ Core MVP Complete (Phases 1A-1G + Phase 2 + Progress Enhancement)
+### ✅ Core MVP Complete (Phases 1A-1H + Phase 2 + Progress Enhancement)
 - ✅ **Phase 1A-1C:** Foundation, UI styling, Exercise Database (1,500+ exercises), visual body part selection
 - ✅ **Phase 1D:** Complete Workout Logging with SQLite, statistics, history, real-time tracking
 - ✅ **Phase 1E:** Rest Timer with audio notifications and workout integration
 - ✅ **Phase 1F-1G:** Workout Templates System (7 default templates), navigation flow, layout polish
+- ✅ **Phase 1G-1H:** Exercise Preview & Customization System with template preservation (Option 1)
 - ✅ **Phase 2:** Navigation Polish with advanced filtering, search, action buttons
 - ✅ **Progress Screen:** Custom chart implementation, overflow fixes, layout optimization
 - ✅ **Database Stability:** Connection lifecycle fixes with retry logic
 - ✅ **Chart System:** Replaced fl_chart with custom CustomPainter for better control
-- 🎯 **Next:** Workout History Management & Phase 1H
+- 🎯 **Next:** Workout History Management & Phase 1I
 
 ### 🚀 Technical Architecture
-- **Database**: SQLite schema (8+ tables), proper indexing, CRUD operations, connection pooling
+- **Database**: SQLite schema v4 (11+ tables), proper indexing, CRUD operations, connection pooling
 - **UI/UX**: Material Design 3, advanced search/filtering, polished navigation
 - **Templates**: 7 default templates, CRUD operations, intelligent recommendations
+- **Exercise Customization**: UserWorkout system with template preservation (Option 1 approach)
+- **User Interface**: Professional modal dialogs, debounced interactions, comprehensive validation
 - **Performance**: Local-first approach, optimized loading, error recovery, real-time search
 
-### 🎪 Ready for Enhancement (Phase 1H+)
-Complete MVP ready for: Progress tracking with body part visualization, gamification (XP/achievements), radar charts, Firebase authentication
+### 🎪 Ready for Enhancement (Phase 1I+)
+Complete MVP with exercise customization ready for: Progress tracking with body part visualization, gamification (XP/achievements), radar charts, Firebase authentication
 
 ---
 
@@ -53,6 +56,13 @@ Complete MVP ready for: Progress tracking with body part visualization, gamifica
 - **Template System**: 7 default templates, CRUD operations, categories (Push/Pull/Legs/etc)
 - **Navigation Flow**: Home → Plans → Template Selection → Workout Setup
 - **Features**: Search, filtering, favorites, intelligent recommendations
+
+### Phase 1G-1H: Exercise Preview & Customization ✅
+- **Template Preservation**: Option 1 approach - system templates remain unchanged
+- **UserWorkout System**: Personal copies with comprehensive exercise customization
+- **Exercise Management**: Remove, edit, reorder exercises with professional modals
+- **Database Schema v4**: 3 new tables for user workout storage and modification tracking
+- **Key Files**: `user_workout_repository.dart`, updated `workout_setup_screen.dart`, `models/workout.dart`
 
 ### Key Bug Fixes & Enhancements ✅
 
@@ -79,6 +89,14 @@ Complete MVP ready for: Progress tracking with body part visualization, gamifica
 - **Files**: `lib/widgets/simple_line_chart.dart` (new), `progress_overview_widget.dart`, `pubspec.yaml`
 - **Result**: Perfect chart fit within containers, maintained visual design
 
+#### Exercise Preview & Customization System ✅
+**Problem**: Template selection showed customize screen instead of proceeding to workout logging
+**Solution**: Comprehensive exercise preview system with template preservation (Option 1 approach)
+- **Files**: `lib/models/workout.dart`, `lib/services/user_workout_repository.dart`, `lib/screens/workout_setup_screen.dart`, `lib/services/database_helper.dart`
+- **Features**: Professional exercise editing modal, debounced interactions, comprehensive logging
+- **Database**: Schema v4 with 3 new tables (user_workouts, user_workout_exercises, user_workout_modifications)
+- **Result**: Users see exactly what exercises they'll do and can customize before starting workouts
+
 ---
 
 ## Development Roadmap
@@ -90,33 +108,33 @@ Complete MVP ready for: Progress tracking with body part visualization, gamifica
 - [ ] User-controlled archive feature
 **Issue:** Current infinite scroll may cause performance issues with large datasets
 
-### Phase 1H: Progress Tracking & Visualization
+### Phase 1I: Progress Tracking & Visualization
 - [ ] Volume calculation (weight × reps × sets) from completed workouts
 - [ ] Body part volume aggregation from local logs
 - [ ] Progress visualization on body silhouettes with heat mapping
 - [ ] Comprehensive progress dashboard with statistics
 **Deliverable:** Progress tracking with visual body part representation
 
-### Phase 1I: Gamification System
+### Phase 1J: Gamification System
 - [ ] XP calculation from volume
 - [ ] Body part leveling system
 - [ ] Level-up notifications
 - [ ] XP/level display components
 **Deliverable:** Gamification mechanics with local persistence
 
-### Phase 1J: Radar Chart Visualization
+### Phase 1K: Radar Chart Visualization
 - [ ] Integrate flutter_radar_chart package
 - [ ] Create radar chart for body part progress
 - [ ] Style chart to match dark theme
 **Deliverable:** Visual progress charts from local data
 
-### Phase 1K: Authentication System
+### Phase 1L: Authentication System
 - [ ] Firebase project integration
 - [ ] Email/password + Google OAuth authentication
 - [ ] Login, register, welcome screens
 **Deliverable:** Authentication flow ready for cloud sync
 
-### Phase 1L: Firebase Data Sync
+### Phase 1M: Firebase Data Sync
 - [ ] Firestore database structure
 - [ ] Workout log cloud sync with offline capability
 - [ ] Local data migration to Firebase
@@ -140,6 +158,35 @@ class Exercise {
   String exerciseId, name, equipment, instructions, gifUrl;
   List<String> bodyParts; // Target muscle groups
   bool isPopular; // Equipment-focused badge
+}
+
+// User Workout System (Phase 1G-1H Implementation)
+class UserWorkout {
+  String userWorkoutId, userId, name;
+  String? baseTemplateId; // Links to original template
+  List<String> targetBodyParts;
+  int plannedDurationMinutes;
+  DateTime createdAt;
+  WorkoutSource source; // template, custom, imported
+  List<UserExercise> exercises;
+  WorkoutCustomizations? modifications;
+}
+
+class UserExercise {
+  String userExerciseId, exerciseId, exerciseName;
+  List<String> bodyParts;
+  int orderIndex, suggestedSets, suggestedRepsMin, suggestedRepsMax;
+  double? suggestedWeight;
+  int restTimeSeconds;
+  bool isFromTemplate;
+  String? sourceTemplateExerciseId;
+}
+
+class WorkoutCustomizations {
+  List<String> removedExerciseIds;
+  List<UserExercise> addedExercises;
+  Map<String, ExerciseModification> modifiedExercises;
+  DateTime modifiedAt;
 }
 
 // Workout Log
@@ -221,11 +268,16 @@ Before starting any new coding session or implementing a new feature:
 - Firestore offline capabilities
 - Real-time listeners in Flutter
 
-**Phase 1G-1H (Progress & Gamification):**
+**Phase 1G-1H (Exercise Customization):** ✅
+- Template preservation patterns
+- User workout data models
+- Professional modal dialogs
+
+**Phase 1I-1J (Progress & Gamification):**
 - State management patterns (Provider, Riverpod, Bloc)
 - Data visualization packages
 
-**Phase 1I (Radar Charts):**
+**Phase 1K (Radar Charts):**
 - flutter_radar_chart package updates
 - Chart customization options
 
@@ -338,7 +390,8 @@ mcp__shadcn-ui__get_block [block-name]
 - **_buildStatCard()** - Metric display cards ✅
 - **_buildQuickActionCard()** - Dashboard shortcuts ✅
 - **RestTimer** - Circular progress timer with haptic feedback ✅
-- **XPProgressBar** - Gamification progress (Phase 1H)
+- **ExerciseEditDialog** - Professional exercise editing modal with validation ✅
+- **XPProgressBar** - Gamification progress (Phase 1I)
 
 ### State Management & Storage (Phase 1C+)
 - **StatefulWidget** - Local state management
@@ -665,6 +718,42 @@ When reporting issues during testing, use this format:
 - ✅ Template loading success (not 0 system templates)
 - ✅ No "Create Your Workout" fallback during normal navigation  
 - ✅ Successful recommendation selection and caching
+
+### ✅ Fixed: Exercise Preview & Customization System Implementation (Phase 1G-1H)
+**Files:** `lib/models/workout.dart`, `lib/services/user_workout_repository.dart`, `lib/screens/workout_setup_screen.dart`, `lib/services/database_helper.dart`
+**Implementation:** Comprehensive exercise preview and customization system with template preservation
+**Changes:**
+- Added complete UserWorkout model system with template preservation (Option 1 approach)
+- Database schema upgrade to v4 with 3 new tables (user_workouts, user_workout_exercises, user_workout_modifications)
+- Replaced body silhouette with exercise list display showing planned sets/reps for each exercise
+- Professional ExerciseEditDialog modal with form validation and comprehensive state management
+- Added debouncing (500ms) and state management to prevent console spam from rapid button clicks
+- Comprehensive logging throughout the system for debugging and monitoring
+- UserWorkoutRepository for CRUD operations on personal workout copies
+- Template modification tracking with full audit trail
+
+**Technical Details:**
+- **Lines of Code Added:** 1,889 lines across 6 files
+- **Database Migration:** Seamless v3 to v4 upgrade with proper indexing
+- **Template Preservation:** System templates remain unchanged, users work with personal copies
+- **Professional UI:** Modal dialogs match Material Design 3 with proper validation
+- **Error Handling:** Comprehensive try-catch blocks with detailed logging
+- **Performance:** Debounced interactions prevent UI spam, optimized database queries
+
+**User Experience Enhancement:**
+- Users now see exactly what exercises they'll do before starting workout
+- Can remove unwanted exercises from template
+- Can edit sets, reps, weight, and rest time for any exercise
+- Template integrity maintained for other users and future workouts
+- Professional modal interface with validation and change detection
+
+**Manual Test Required:**
+1. **Navigate to Plans tab** → Select any template → Click "Use this plan"
+2. **Verify exercise list display** → Should show all template exercises with suggested sets/reps
+3. **Test exercise removal** → Click remove button (X) to delete exercises
+4. **Test exercise editing** → Click edit button, modify values, save/cancel
+5. **Check console logs** → Look for UserWorkout creation and database operations
+6. **Start workout** → Should proceed with customized exercises, not dynamic loading
 
 ---
 
