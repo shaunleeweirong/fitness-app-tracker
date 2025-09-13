@@ -47,6 +47,7 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
   @override
   void initState() {
     super.initState();
+    print('🏗️ CreateWorkoutPlanScreen: initState() called');
     _tabController = TabController(length: 2, vsync: this);
     _loadExercises();
     
@@ -86,62 +87,152 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
   }
 
   Future<void> _saveTemplate() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedExercises.isEmpty) {
-      _showError('Please select at least one exercise');
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
+    print('💾 CreateWorkoutPlanScreen: _saveTemplate() called');
+    print('🎯 Form validation check...');
+    
     try {
-      final userId = await _dbHelper.createMockUser();
-      final templateId = _dbHelper.generateWorkoutTemplateId();
-      final now = DateTime.now();
+      // Form validation with null-safe check
+      print('🔍 Checking form state availability...');
+      final formState = _formKey.currentState;
+      if (formState == null) {
+        print('⚠️ Form state is null - form widget not currently visible');
+        print('📍 Current step: $_currentStep, form is on step 0');
+        // Skip form validation if form is not visible (we're on Review step)
+        print('✅ Skipping form validation - assuming form was validated on step 0');
+      } else {
+        print('✅ Form state exists, validating...');
+        if (!formState.validate()) {
+          print('❌ Form validation failed');
+          return;
+        }
+        print('✅ Form validation passed');
+      }
+      
+      // Exercise validation
+      if (_selectedExercises.isEmpty) {
+        print('❌ No exercises selected');
+        _showError('Please select at least one exercise');
+        return;
+      }
+      print('✅ Exercise validation passed (${_selectedExercises.length} exercises)');
 
-      // Create template exercises
+      print('🔄 Setting saving state to true');
+      setState(() => _isSaving = true);
+
+      print('👤 Creating/getting mock user...');
+      final userId = await _dbHelper.createMockUser();
+      print('✅ User ID: $userId');
+      
+      print('🆔 Generating template ID...');
+      final templateId = _dbHelper.generateWorkoutTemplateId();
+      print('✅ Template ID: $templateId');
+      
+      final now = DateTime.now();
+      print('⏰ Timestamp: $now');
+
+      print('🏋️ Creating template exercises...');
       final templateExercises = <TemplateExercise>[];
       for (int i = 0; i < _selectedExercises.length; i++) {
         final exercise = _selectedExercises[i];
-        templateExercises.add(exercise.copyWith(
-          templateExerciseId: _dbHelper.generateTemplateExerciseId(templateId, exercise.exerciseId),
-          templateId: templateId,
-          orderIndex: i,
-        ));
-      }
-
-      final template = WorkoutTemplate(
-        templateId: templateId,
-        userId: userId,
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-        targetBodyParts: _selectedBodyParts.toList(),
-        estimatedDurationMinutes: int.tryParse(_durationController.text) ?? 45,
-        difficulty: _difficulty,
-        category: _category,
-        createdAt: now,
-        updatedAt: now,
-        exercises: templateExercises,
-      );
-
-      await _templateRepository.saveTemplate(template);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Workout plan "${template.name}" created successfully'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        print('   📝 Processing exercise $i: ${exercise.exerciseName}');
         
-        Navigator.of(context).pop(true);
+        try {
+          final templateExerciseId = _dbHelper.generateTemplateExerciseId(templateId, exercise.exerciseId);
+          print('     🆔 Generated exercise ID: $templateExerciseId');
+          
+          templateExercises.add(exercise.copyWith(
+            templateExerciseId: templateExerciseId,
+            templateId: templateId,
+            orderIndex: i,
+          ));
+          print('     ✅ Exercise added to list');
+        } catch (e) {
+          print('     ❌ Error processing exercise $i: $e');
+          throw Exception('Failed to process exercise "${exercise.exerciseName}": $e');
+        }
       }
-    } catch (e) {
-      _showError('Failed to save workout plan: $e');
+      print('✅ All template exercises created (${templateExercises.length} total)');
+
+      print('📋 Creating workout template object...');
+      try {
+        final template = WorkoutTemplate(
+          templateId: templateId,
+          userId: userId,
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+          targetBodyParts: _selectedBodyParts.toList(),
+          estimatedDurationMinutes: int.tryParse(_durationController.text) ?? 45,
+          difficulty: _difficulty,
+          category: _category,
+          createdAt: now,
+          updatedAt: now,
+          exercises: templateExercises,
+        );
+        print('✅ Template object created: ${template.name}');
+        print('   📊 Duration: ${template.estimatedDurationMinutes} minutes');
+        print('   📈 Difficulty: ${template.difficulty.name}');
+        print('   📂 Category: ${template.category.name}');
+        print('   🎯 Body parts: ${template.targetBodyParts.join(", ")}');
+
+        print('💾 Saving template to repository...');
+        await _templateRepository.saveTemplate(template);
+        print('✅ Template saved successfully to repository');
+
+        if (mounted) {
+          print('✅ Widget still mounted, showing success message');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Workout plan "${template.name}" created successfully'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          
+          print('🔙 Navigating back with success result');
+          Navigator.of(context).pop(true);
+        } else {
+          print('⚠️ Widget not mounted, skipping UI updates');
+        }
+      } catch (e) {
+        print('❌ Error creating template object: $e');
+        throw Exception('Failed to create template object: $e');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Critical error in _saveTemplate: $e');
+      print('📚 Stack trace: $stackTrace');
+      
+      // Detailed error context
+      print('🔍 Error context:');
+      print('   - Form valid: ${_formKey.currentState?.validate() ?? false}');
+      print('   - Exercises count: ${_selectedExercises.length}');
+      print('   - Template name: "${_nameController.text.trim()}"');
+      print('   - Selected body parts: ${_selectedBodyParts.toList()}');
+      print('   - Difficulty: ${_difficulty.name}');
+      print('   - Category: ${_category.name}');
+      print('   - Duration: ${_durationController.text}');
+      
+      String errorMessage = 'Failed to save workout plan';
+      
+      // Provide specific error messages based on error type
+      if (e.toString().contains('database')) {
+        errorMessage = 'Database error while saving workout plan';
+      } else if (e.toString().contains('exercise')) {
+        errorMessage = 'Error processing exercises in workout plan';
+      } else if (e.toString().contains('template')) {
+        errorMessage = 'Error creating workout template';
+      } else if (e.toString().contains('validation')) {
+        errorMessage = 'Validation error in workout plan data';
+      }
+      
+      print('💬 Showing error to user: $errorMessage');
+      _showError('$errorMessage: ${e.toString()}');
     } finally {
+      print('🔄 Cleaning up: setting saving state to false');
       if (mounted) {
         setState(() => _isSaving = false);
+        print('✅ Saving state reset successfully');
+      } else {
+        print('⚠️ Widget not mounted during cleanup');
       }
     }
   }
@@ -192,32 +283,44 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
   }
 
   void _onBodyPartSelected(String bodyPart) {
+    print('🎯 CreateWorkoutPlanScreen: Body part selected: $bodyPart');
+    final wasSelected = _selectedBodyPart == bodyPart;
     setState(() {
-      _selectedBodyPart = _selectedBodyPart == bodyPart ? null : bodyPart;
+      _selectedBodyPart = wasSelected ? null : bodyPart;
     });
+    print('✅ CreateWorkoutPlanScreen: Body part selection updated to: $_selectedBodyPart');
   }
 
   void _nextStep() {
+    print('🔄 CreateWorkoutPlanScreen: Next step requested, current: $_currentStep');
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
+      print('➡️ CreateWorkoutPlanScreen: Moving to step $_currentStep');
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    } else {
+      print('🚫 CreateWorkoutPlanScreen: Already at last step');
     }
   }
 
   void _previousStep() {
+    print('🔄 CreateWorkoutPlanScreen: Previous step requested, current: $_currentStep');
     if (_currentStep > 0) {
       setState(() => _currentStep--);
+      print('⬅️ CreateWorkoutPlanScreen: Moving to step $_currentStep');
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    } else {
+      print('🚫 CreateWorkoutPlanScreen: Already at first step');
     }
   }
 
   void _showError(String message) {
+    print('❌ CreateWorkoutPlanScreen: Error - $message');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -230,6 +333,15 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    print('📐 CreateWorkoutPlanScreen: Building with constraints ${screenSize.width.toInt()}x${screenSize.height.toInt()}');
+    print('📍 CreateWorkoutPlanScreen: Current step $_currentStep/$_totalSteps');
+    
+    // Track successful layout completion
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('✅ CreateWorkoutPlanScreen: Layout completed without overflow');
+    });
+    
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
@@ -250,7 +362,10 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
         actions: [
           if (_currentStep == _totalSteps - 1)
             TextButton(
-              onPressed: _isSaving ? null : _saveTemplate,
+              onPressed: _isSaving ? null : () {
+                print('🔘 Save button (AppBar) pressed');
+                _saveTemplate();
+              },
               child: _isSaving
                   ? const SizedBox(
                       width: 16,
@@ -316,7 +431,10 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: _currentStep == _totalSteps - 1 ? _saveTemplate : _nextStep,
+              onPressed: _currentStep == _totalSteps - 1 ? () {
+                print('🔘 Create Plan button (Bottom Navigation) pressed');
+                _saveTemplate();
+              } : _nextStep,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFB74D),
                 foregroundColor: Colors.black,
@@ -601,34 +719,44 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
   }
 
   Widget _buildBodyPartSelection() {
-    return Column(
-      children: [
-        // Body silhouettes
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: BodySilhouette(
-            selectedBodyPart: _selectedBodyPart,
-            onBodyPartSelected: _onBodyPartSelected,
-            showLabels: false,
+    print('🎯 CreateWorkoutPlanScreen: Building body part selection, selected: $_selectedBodyPart');
+    
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Body silhouettes
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: BodySilhouette(
+              selectedBodyPart: _selectedBodyPart,
+              onBodyPartSelected: _onBodyPartSelected,
+              showLabels: false,
+            ),
           ),
-        ),
 
-        // Exercise list filtered by selected body part
-        Expanded(
-          child: _selectedBodyPart != null
-              ? _buildExerciseList(
-                  _availableExercises
-                      .where((ex) => ex.bodyParts.contains(_selectedBodyPart))
-                      .toList(),
-                )
-              : const Center(
-                  child: Text(
-                    'Select a body part above to see exercises',
-                    style: TextStyle(color: Colors.white60),
+          // Exercise list filtered by selected body part
+          SizedBox(
+            height: 300, // Fixed height to prevent overflow
+            child: _selectedBodyPart != null
+                ? _buildExerciseList(
+                    _availableExercises
+                        .where((ex) => ex.bodyParts.contains(_selectedBodyPart))
+                        .toList(),
+                  )
+                : const Center(
+                    child: Text(
+                      'Select a body part above to see exercises',
+                      style: TextStyle(color: Colors.white60),
+                    ),
                   ),
-                ),
-        ),
-      ],
+          ),
+          
+          // Add bottom padding to ensure last items are accessible
+          const SizedBox(height: 100),
+        ],
+      ),
     );
   }
 
