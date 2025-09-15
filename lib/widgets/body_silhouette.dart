@@ -210,7 +210,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Chest
       _buildClickableRegion(
         bodyPart: 'chest',
-        left: 45,
+        left: 35,
         top: 68,
         width: 61,
         height: 39,
@@ -219,14 +219,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Shoulders (front delts)
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 40,
+        left: 33,
         top: 52,
         width: 18,
         height: 32,
       ),
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 90,
+        left: 79,
         top: 52,
         width: 18,
         height: 32,
@@ -235,14 +235,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Upper Arms (biceps)
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 34,
+        left: 32,
         top: 79,
         width: 14,
         height: 41,
       ),
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 98,
+        left: 85,
         top: 79,
         width: 14,
         height: 41,
@@ -251,14 +251,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Lower Arms (forearms)
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 38,
+        left: 32,
         top: 113,
         width: 9,
         height: 34,
       ),
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 103,
+        left: 89,
         top: 113,
         width: 9,
         height: 34,
@@ -267,7 +267,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Waist (abs)
       _buildClickableRegion(
         bodyPart: 'waist',
-        left: 45,
+        left: 38,
         top: 107,
         width: 56,
         height: 62,
@@ -276,14 +276,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Upper Legs (quads)
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 50,
+        left: 42,
         top: 180,
         width: 18,
         height: 56,
       ),
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 80,
+        left: 73,
         top: 180,
         width: 18,
         height: 56,
@@ -292,14 +292,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Lower Legs (calves)
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 54,
+        left: 44,
         top: 242,
         width: 14,
         height: 45,
       ),
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 84,
+        left: 74,
         top: 242,
         width: 14,
         height: 45,
@@ -312,7 +312,7 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Back (upper back)
       _buildClickableRegion(
         bodyPart: 'back',
-        left: 43,
+        left: 33,
         top: 68,
         width: 63,
         height: 50,
@@ -321,14 +321,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Shoulders (rear delts)
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 40,
+        left: 30,
         top: 52,
         width: 18,
         height: 32,
       ),
       _buildClickableRegion(
         bodyPart: 'shoulders',
-        left: 87,
+        left: 80,
         top: 52,
         width: 18,
         height: 32,
@@ -337,14 +337,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Upper Arms (triceps)
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 34,
+        left: 30,
         top: 79,
         width: 14,
         height: 41,
       ),
       _buildClickableRegion(
         bodyPart: 'upper arms',
-        left: 98,
+        left: 85,
         top: 79,
         width: 14,
         height: 41,
@@ -353,14 +353,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Lower Arms (forearms back)
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 35,
+        left: 31,
         top: 113,
         width: 9,
         height: 34,
       ),
       _buildClickableRegion(
         bodyPart: 'lower arms',
-        left: 104,
+        left: 90,
         top: 113,
         width: 9,
         height: 34,
@@ -369,14 +369,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Upper Legs (glutes/hamstrings)
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 50,
+        left: 40,
         top: 180,
         width: 18,
         height: 56,
       ),
       _buildClickableRegion(
         bodyPart: 'upper legs',
-        left: 80,
+        left: 70,
         top: 180,
         width: 18,
         height: 56,
@@ -385,14 +385,14 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Lower Legs (calves back)
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 50,
+        left: 40,
         top: 242,
         width: 14,
         height: 45,
       ),
       _buildClickableRegion(
         bodyPart: 'lower legs',
-        left: 80,
+        left: 70,
         top: 242,
         width: 14,
         height: 45,
