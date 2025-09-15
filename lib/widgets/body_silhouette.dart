@@ -267,10 +267,10 @@ class _BodySilhouetteState extends State<BodySilhouette> {
       // Waist (abs)
       _buildClickableRegion(
         bodyPart: 'waist',
-        left: 38,
+        left: 47,
         top: 107,
-        width: 56,
-        height: 62,
+        width: 37,
+        height: 47,
       ),
       
       // Upper Legs (quads)
