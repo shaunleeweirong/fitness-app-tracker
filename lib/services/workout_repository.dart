@@ -460,6 +460,240 @@ class WorkoutRepository {
     return volumeByBodyPart;
   }
 
+  /// Get workout summaries with optimized single-query approach
+  /// Replaces the heavy getWorkouts method for list displays
+  Future<List<WorkoutSummary>> getWorkoutSummaries({
+    required String userId,
+    WorkoutStatus? status,
+    String? searchQuery,
+    int? limit,
+    int? offset,
+  }) async {
+    debugPrint('📊 [REPO] Loading workout summaries for user: $userId');
+    debugPrint('📊 [REPO] Filters - Status: $status, Search: $searchQuery, Limit: $limit');
+    
+    final db = await _dbHelper.database;
+    
+    // Build WHERE clause
+    final whereConditions = <String>['w.user_id = ?'];
+    final whereArgs = <dynamic>[userId];
+    
+    if (status != null) {
+      whereConditions.add('w.status = ?');
+      whereArgs.add(status.index);
+    }
+    
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      whereConditions.add('(w.name LIKE ? OR w.notes LIKE ?)');
+      whereArgs.add('%$searchQuery%');
+      whereArgs.add('%$searchQuery%');
+    }
+    
+    // Optimized query with aggregated exercise and set statistics
+    final query = '''
+      SELECT 
+        w.*,
+        COALESCE(exercise_stats.exercise_count, 0) as exercise_count,
+        COALESCE(set_stats.total_sets, 0) as total_sets,
+        COALESCE(set_stats.completed_sets, 0) as completed_sets,
+        COALESCE(set_stats.total_volume, 0.0) as total_volume
+      FROM ${DatabaseHelper.tableWorkouts} w
+      LEFT JOIN (
+        SELECT 
+          workout_id,
+          COUNT(*) as exercise_count
+        FROM ${DatabaseHelper.tableWorkoutExercises}
+        GROUP BY workout_id
+      ) exercise_stats ON w.workout_id = exercise_stats.workout_id
+      LEFT JOIN (
+        SELECT 
+          we.workout_id,
+          COUNT(ws.set_number) as total_sets,
+          SUM(CASE WHEN ws.is_completed = 1 THEN 1 ELSE 0 END) as completed_sets,
+          SUM(CASE WHEN ws.is_completed = 1 THEN ws.weight * ws.reps ELSE 0 END) as total_volume
+        FROM ${DatabaseHelper.tableWorkoutExercises} we
+        LEFT JOIN ${DatabaseHelper.tableWorkoutSets} ws ON we.workout_exercise_id = ws.workout_exercise_id
+        GROUP BY we.workout_id
+      ) set_stats ON w.workout_id = set_stats.workout_id
+      WHERE ${whereConditions.join(' AND ')}
+      ORDER BY w.created_at DESC
+      ${limit != null ? 'LIMIT $limit' : ''}
+      ${offset != null ? 'OFFSET $offset' : ''}
+    ''';
+    
+    debugPrint('🔍 [REPO] Executing optimized summary query...');
+    final results = await db.rawQuery(query, whereArgs);
+    
+    debugPrint('✅ [REPO] Query returned ${results.length} workout summaries');
+    
+    final summaries = results.map((row) => WorkoutSummary.fromDatabaseRow(row)).toList();
+    
+    if (summaries.isNotEmpty) {
+      debugPrint('📊 [REPO] First summary: ${summaries.first.name} (${summaries.first.exerciseCount} exercises)');
+    }
+    
+    return summaries;
+  }
+
+  /// Get recent workout summaries with default 30-day time filtering
+  /// Optimized for performance to prevent large dataset issues
+  Future<List<WorkoutSummary>> getRecentWorkoutSummaries({
+    required String userId,
+    WorkoutStatus? status,
+    String? searchQuery,
+    int? limit,
+    int daysBack = 30,
+  }) async {
+    debugPrint('📅 [REPO] Loading recent summaries: $daysBack days back');
+    
+    final db = await _dbHelper.database;
+    final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
+    
+    // Build WHERE clause with time filtering
+    final whereConditions = <String>['w.user_id = ?', 'w.created_at >= ?'];
+    final whereArgs = <dynamic>[userId, cutoffDate.toIso8601String()];
+    
+    if (status != null) {
+      whereConditions.add('w.status = ?');
+      whereArgs.add(status.index);
+    }
+    
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      whereConditions.add('(w.name LIKE ? OR w.notes LIKE ?)');
+      whereArgs.add('%$searchQuery%');
+      whereArgs.add('%$searchQuery%');
+    }
+    
+    final query = '''
+      SELECT 
+        w.*,
+        COALESCE(exercise_stats.exercise_count, 0) as exercise_count,
+        COALESCE(set_stats.total_sets, 0) as total_sets,
+        COALESCE(set_stats.completed_sets, 0) as completed_sets,
+        COALESCE(set_stats.total_volume, 0.0) as total_volume
+      FROM ${DatabaseHelper.tableWorkouts} w
+      LEFT JOIN (
+        SELECT 
+          workout_id,
+          COUNT(*) as exercise_count
+        FROM ${DatabaseHelper.tableWorkoutExercises}
+        GROUP BY workout_id
+      ) exercise_stats ON w.workout_id = exercise_stats.workout_id
+      LEFT JOIN (
+        SELECT 
+          we.workout_id,
+          COUNT(ws.set_number) as total_sets,
+          SUM(CASE WHEN ws.is_completed = 1 THEN 1 ELSE 0 END) as completed_sets,
+          SUM(CASE WHEN ws.is_completed = 1 THEN ws.weight * ws.reps ELSE 0 END) as total_volume
+        FROM ${DatabaseHelper.tableWorkoutExercises} we
+        LEFT JOIN ${DatabaseHelper.tableWorkoutSets} ws ON we.workout_exercise_id = ws.workout_exercise_id
+        GROUP BY we.workout_id
+      ) set_stats ON w.workout_id = set_stats.workout_id
+      WHERE ${whereConditions.join(' AND ')}
+      ORDER BY w.created_at DESC
+      ${limit != null ? 'LIMIT $limit' : ''}
+    ''';
+    
+    final results = await db.rawQuery(query, whereArgs);
+    debugPrint('✅ [REPO] Recent query returned ${results.length} summaries');
+    
+    return results.map((row) => WorkoutSummary.fromDatabaseRow(row)).toList();
+  }
+
+  /// Get paginated workout summaries for infinite scroll
+  /// Uses page-based approach instead of offset for better performance
+  Future<List<WorkoutSummary>> getPaginatedWorkoutSummaries({
+    required String userId,
+    WorkoutStatus? status,
+    String? searchQuery,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    debugPrint('📄 [REPO] Loading page $page (size: $pageSize)');
+    
+    final offset = (page - 1) * pageSize;
+    
+    return await getWorkoutSummaries(
+      userId: userId,
+      status: status,
+      searchQuery: searchQuery,
+      limit: pageSize,
+      offset: offset,
+    );
+  }
+
+  /// Enhanced getWorkoutStats with optional time filtering
+  Future<WorkoutStats> getWorkoutStatsEnhanced(String userId, {int? daysBack}) async {
+    debugPrint('📈 [REPO] Loading enhanced workout stats (${daysBack != null ? '$daysBack days' : 'all time'})');
+    
+    final db = await _dbHelper.database;
+    
+    // Build WHERE clause with optional time filtering
+    final whereConditions = <String>['w.user_id = ?'];
+    final whereArgs = <dynamic>[userId];
+    
+    if (daysBack != null) {
+      final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
+      whereConditions.add('w.created_at >= ?');
+      whereArgs.add(cutoffDate.toIso8601String());
+    }
+    
+    final statsQuery = '''
+      SELECT 
+        COUNT(*) as total_workouts,
+        SUM(CASE WHEN w.status = ${WorkoutStatus.completed.index} THEN 1 ELSE 0 END) as completed_workouts,
+        SUM(CASE WHEN w.status = ${WorkoutStatus.inProgress.index} THEN 1 ELSE 0 END) as in_progress_workouts,
+        COALESCE(SUM(volume_stats.total_volume), 0.0) as total_volume,
+        COALESCE(SUM(set_stats.total_sets), 0) as total_sets,
+        COALESCE(AVG(
+          CASE 
+            WHEN w.status = ${WorkoutStatus.completed.index} AND w.started_at IS NOT NULL AND w.completed_at IS NOT NULL
+            THEN (julianday(w.completed_at) - julianday(w.started_at)) * 24 * 60
+            ELSE w.planned_duration_minutes
+          END
+        ), 0.0) as avg_duration_minutes
+      FROM ${DatabaseHelper.tableWorkouts} w
+      LEFT JOIN (
+        SELECT 
+          we.workout_id,
+          SUM(CASE WHEN ws.is_completed = 1 THEN ws.weight * ws.reps ELSE 0 END) as total_volume
+        FROM ${DatabaseHelper.tableWorkoutExercises} we
+        LEFT JOIN ${DatabaseHelper.tableWorkoutSets} ws ON we.workout_exercise_id = ws.workout_exercise_id
+        GROUP BY we.workout_id
+      ) volume_stats ON w.workout_id = volume_stats.workout_id
+      LEFT JOIN (
+        SELECT 
+          we.workout_id,
+          COUNT(ws.set_number) as total_sets
+        FROM ${DatabaseHelper.tableWorkoutExercises} we
+        LEFT JOIN ${DatabaseHelper.tableWorkoutSets} ws ON we.workout_exercise_id = ws.workout_exercise_id
+        GROUP BY we.workout_id
+      ) set_stats ON w.workout_id = set_stats.workout_id
+      WHERE ${whereConditions.join(' AND ')}
+    ''';
+    
+    final result = await db.rawQuery(statsQuery, whereArgs);
+    
+    if (result.isEmpty) {
+      return const WorkoutStats(
+        totalWorkouts: 0,
+        completedWorkouts: 0,
+        totalVolume: 0.0,
+        averageDurationMinutes: 0.0,
+      );
+    }
+    
+    final data = result.first;
+    debugPrint('✅ [REPO] Stats loaded: ${data['total_workouts']} total workouts');
+    
+    return WorkoutStats(
+      totalWorkouts: data['total_workouts'] as int? ?? 0,
+      completedWorkouts: data['completed_workouts'] as int? ?? 0,
+      totalVolume: (data['total_volume'] as num?)?.toDouble() ?? 0.0,
+      averageDurationMinutes: (data['avg_duration_minutes'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
   /// Close database connection
   Future<void> close() async {
     await _dbHelper.close();

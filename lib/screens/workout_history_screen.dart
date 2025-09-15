@@ -18,7 +18,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   
   // State
-  List<Workout> _workouts = [];
+  List<WorkoutSummary> _workouts = [];
   WorkoutStats? _stats;
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -32,6 +32,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   WorkoutStatus? _selectedStatus;
   String? _selectedBodyPart;
   DateTimeRange? _selectedDateRange;
+  int _selectedDaysBack = 30; // Default 30-day filtering
   
   // Controllers
   final ScrollController _scrollController = ScrollController();
@@ -44,8 +45,12 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     WorkoutStatus.cancelled,
   ];
   
-  final List<String> _bodyPartOptions = [
-    'chest', 'back', 'shoulders', 'arms', 'upper legs', 'lower legs', 'waist', 'cardio'
+  
+  final List<Map<String, dynamic>> _timePeriodOptions = [
+    {'label': 'Last 7 days', 'days': 7},
+    {'label': 'Last 30 days', 'days': 30},
+    {'label': 'Last 90 days', 'days': 90},
+    {'label': 'All time', 'days': -1}, // -1 means no filter
   ];
 
   @override
@@ -79,18 +84,45 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     });
     
     try {
+      print('📚 [HISTORY_SCREEN] Loading workout history with optimized queries...');
+      
       // Get mock user
       final userId = await _dbHelper.createMockUser();
+      print('👤 [HISTORY_SCREEN] User ID: $userId');
       
-      // Load initial workouts and stats
-      final workouts = await _workoutRepository.getWorkouts(
-        userId: userId,
-        status: _selectedStatus,
-        limit: _pageSize,
-        offset: 0,
+      // Load initial workouts using optimized summary method with selected time filtering
+      print('🔍 [HISTORY_SCREEN] Loading recent workout summaries (${_selectedDaysBack == -1 ? 'all time' : '${_selectedDaysBack} days'})...');
+      
+      final List<WorkoutSummary> workouts;
+      if (_selectedDaysBack == -1) {
+        // Load all workouts
+        workouts = await _workoutRepository.getWorkoutSummaries(
+          userId: userId,
+          status: _selectedStatus,
+          searchQuery: null,
+          limit: _pageSize,
+        );
+      } else {
+        // Load with time filtering
+        workouts = await _workoutRepository.getRecentWorkoutSummaries(
+          userId: userId,
+          status: _selectedStatus,
+          searchQuery: null, // No search for initial load
+          limit: _pageSize,
+          daysBack: _selectedDaysBack,
+        );
+      }
+      
+      print('📊 [HISTORY_SCREEN] Loaded ${workouts.length} workout summaries');
+      
+      // Load stats with matching time filtering
+      print('📈 [HISTORY_SCREEN] Loading workout statistics...');
+      final stats = await _workoutRepository.getWorkoutStatsEnhanced(
+        userId, 
+        daysBack: _selectedDaysBack == -1 ? null : _selectedDaysBack, // Match the summary filtering
       );
       
-      final stats = await _workoutRepository.getWorkoutStats(userId);
+      print('✅ [HISTORY_SCREEN] Statistics loaded: ${stats.totalWorkouts} total workouts');
       
       if (mounted) {
         setState(() {
@@ -99,21 +131,24 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           _isLoading = false;
           _hasMoreWorkouts = workouts.length == _pageSize;
         });
+        
+        print('🎯 [HISTORY_SCREEN] UI updated with ${_workouts.length} workouts');
       }
       
-    } catch (e) {
-      print('Error loading workout history: $e');
+    } catch (e, stackTrace) {
+      print('❌ [HISTORY_SCREEN] Error loading workout history: $e');
+      print('📚 [HISTORY_SCREEN] Stack trace: $stackTrace');
       
       // If database connection issue, try to retry once
       if (e.toString().contains('database_closed')) {
-        print('Database connection closed, attempting retry...');
+        print('🔄 [HISTORY_SCREEN] Database connection closed, attempting retry...');
         try {
           // Wait a moment and retry
           await Future.delayed(const Duration(milliseconds: 500));
           await _loadWorkoutHistoryRetry();
           return;
         } catch (retryError) {
-          print('Retry failed: $retryError');
+          print('❌ [HISTORY_SCREEN] Retry failed: $retryError');
         }
       }
       
@@ -125,18 +160,25 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   }
 
   Future<void> _loadWorkoutHistoryRetry() async {
+    print('🔄 [HISTORY_SCREEN] Retrying workout history load...');
+    
     // Get mock user
     final userId = await _dbHelper.createMockUser();
     
-    // Load initial workouts and stats
-    final workouts = await _workoutRepository.getWorkouts(
+    // Load initial workouts using optimized method
+    final workouts = await _workoutRepository.getRecentWorkoutSummaries(
       userId: userId,
       status: _selectedStatus,
+      searchQuery: null,
       limit: _pageSize,
-      offset: 0,
     );
     
-    final stats = await _workoutRepository.getWorkoutStats(userId);
+    final stats = await _workoutRepository.getWorkoutStatsEnhanced(
+      userId, 
+      daysBack: _selectedDaysBack == -1 ? null : _selectedDaysBack,
+    );
+    
+    print('✅ [HISTORY_SCREEN] Retry successful: ${workouts.length} workouts loaded');
     
     if (mounted) {
       setState(() {
@@ -154,15 +196,20 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     setState(() => _isLoadingMore = true);
     
     try {
+      print('📖 [HISTORY_SCREEN] Loading more workouts (page ${_currentPage + 1})...');
+      
       final userId = await _dbHelper.createMockUser();
       final nextPage = _currentPage + 1;
       
-      final moreWorkouts = await _workoutRepository.getWorkouts(
+      // Use paginated method instead of offset-based approach
+      final moreWorkouts = await _workoutRepository.getPaginatedWorkoutSummaries(
         userId: userId,
         status: _selectedStatus,
-        limit: _pageSize,
-        offset: nextPage * _pageSize,
+        page: nextPage,
+        pageSize: _pageSize,
       );
+      
+      print('📄 [HISTORY_SCREEN] Loaded ${moreWorkouts.length} more workouts on page $nextPage');
       
       if (mounted) {
         setState(() {
@@ -171,26 +218,31 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           _isLoadingMore = false;
           _hasMoreWorkouts = moreWorkouts.length == _pageSize;
         });
+        
+        print('🎯 [HISTORY_SCREEN] Total workouts now: ${_workouts.length}');
       }
       
-    } catch (e) {
-      print('Error loading more workouts: $e');
+    } catch (e, stackTrace) {
+      print('❌ [HISTORY_SCREEN] Error loading more workouts: $e');
+      print('📚 [HISTORY_SCREEN] Stack trace: $stackTrace');
       
       // If database connection issue, try to retry once
       if (e.toString().contains('database_closed')) {
-        print('Database connection closed for pagination, attempting retry...');
+        print('🔄 [HISTORY_SCREEN] Database connection closed for pagination, attempting retry...');
         try {
           await Future.delayed(const Duration(milliseconds: 500));
           // Retry the same operation
           final userId = await _dbHelper.createMockUser();
           final nextPage = _currentPage + 1;
           
-          final moreWorkouts = await _workoutRepository.getWorkouts(
+          final moreWorkouts = await _workoutRepository.getPaginatedWorkoutSummaries(
             userId: userId,
             status: _selectedStatus,
-            limit: _pageSize,
-            offset: nextPage * _pageSize,
+            page: nextPage,
+            pageSize: _pageSize,
           );
+          
+          print('✅ [HISTORY_SCREEN] Pagination retry successful: ${moreWorkouts.length} workouts');
           
           if (mounted) {
             setState(() {
@@ -202,7 +254,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
           }
           return;
         } catch (retryError) {
-          print('Pagination retry failed: $retryError');
+          print('❌ [HISTORY_SCREEN] Pagination retry failed: $retryError');
         }
       }
       
@@ -247,31 +299,52 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
       _selectedStatus = null;
       _selectedBodyPart = null;
       _selectedDateRange = null;
+      _selectedDaysBack = 30; // Reset to default
     });
     await _loadWorkoutHistory();
   }
 
-  void _navigateToWorkout(Workout workout) {
-    if (workout.status == WorkoutStatus.planned || workout.status == WorkoutStatus.inProgress) {
+  void _navigateToWorkout(WorkoutSummary workoutSummary) {
+    print('🎯 [HISTORY_SCREEN] Navigating to workout: ${workoutSummary.name} (${workoutSummary.status.name})');
+    
+    if (workoutSummary.status == WorkoutStatus.planned || workoutSummary.status == WorkoutStatus.inProgress) {
+      print('▶️ [HISTORY_SCREEN] Opening workout logging screen for active workout');
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => WorkoutLoggingScreen(workoutId: workout.workoutId),
+          builder: (context) => WorkoutLoggingScreen(workoutId: workoutSummary.workoutId),
         ),
       ).then((_) => _loadWorkoutHistory()); // Refresh after returning
     } else {
-      _showWorkoutDetails(workout);
+      print('📋 [HISTORY_SCREEN] Showing workout details for completed workout');
+      _showWorkoutDetails(workoutSummary);
     }
   }
 
-  void _showWorkoutDetails(Workout workout) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildWorkoutDetailsSheet(workout),
-    );
+  void _showWorkoutDetails(WorkoutSummary workoutSummary) async {
+    print('📋 [HISTORY_SCREEN] Loading full workout details for: ${workoutSummary.name}');
+    
+    try {
+      // Load full workout data for detailed view
+      final fullWorkout = await _workoutRepository.getWorkout(workoutSummary.workoutId);
+      
+      if (fullWorkout != null && mounted) {
+        print('✅ [HISTORY_SCREEN] Full workout loaded with ${fullWorkout.exercises.length} exercises');
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) => _buildWorkoutDetailsSheet(fullWorkout),
+        );
+      } else {
+        print('❌ [HISTORY_SCREEN] Failed to load full workout details');
+        _showError('Failed to load workout details');
+      }
+    } catch (e) {
+      print('❌ [HISTORY_SCREEN] Error loading workout details: $e');
+      _showError('Error loading workout details: $e');
+    }
   }
 
   void _showError(String message) {
@@ -513,6 +586,10 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 _buildFilterChip(
                   'Date: ${_selectedDateRange!.start.month}/${_selectedDateRange!.start.day} - ${_selectedDateRange!.end.month}/${_selectedDateRange!.end.day}',
                 ),
+              if (_selectedDaysBack != 30)
+                _buildFilterChip(
+                  'Period: ${_selectedDaysBack == -1 ? 'All time' : '$_selectedDaysBack days'}',
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -586,7 +663,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
     );
   }
 
-  Widget _buildWorkoutTile(Workout workout) {
+  Widget _buildWorkoutTile(WorkoutSummary workout) {
     final statusColor = _getStatusColor(workout.status);
     final statusIcon = _getStatusIcon(workout.status);
     
@@ -681,7 +758,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                     const SizedBox(width: 16),
                     _buildWorkoutStat(
                       Icons.fitness_center,
-                      '${workout.exercises.length} exercises',
+                      '${workout.exerciseCount} exercises',
                     ),
                     if (workout.totalVolume > 0) ...[
                       const SizedBox(width: 16),
@@ -951,6 +1028,29 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                 ),
                 const SizedBox(height: 20),
                 
+                // Time Period Filter
+                const Text(
+                  'Time Period',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: _timePeriodOptions.map((option) {
+                    final isSelected = _selectedDaysBack == option['days'];
+                    return _buildFilterOption(
+                      option['label'],
+                      isSelected,
+                      () => setModalState(() => _selectedDaysBack = option['days']),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                
                 // Action Buttons
                 Row(
                   children: [
@@ -1020,7 +1120,8 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   bool _hasActiveFilters() {
     return _selectedStatus != null || 
            _selectedBodyPart != null || 
-           _selectedDateRange != null;
+           _selectedDateRange != null ||
+           _selectedDaysBack != 30; // 30 days is the default
   }
 
   Color _getStatusColor(WorkoutStatus status) {

@@ -1113,3 +1113,150 @@ class UserExercise {
     );
   }
 }
+
+/// Lightweight summary model for efficient workout history display
+/// Contains essential workout information without full exercise/set data to optimize list performance
+class WorkoutSummary {
+  final String workoutId;
+  final String userId;
+  final String name;
+  final List<String> targetBodyParts;
+  final int plannedDurationMinutes;
+  final DateTime createdAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final WorkoutStatus status;
+  final String? notes;
+  
+  // Aggregated statistics (calculated from exercises/sets)
+  final int exerciseCount;
+  final int totalSets;
+  final double totalVolume;
+  final int completedSets;
+  
+  const WorkoutSummary({
+    required this.workoutId,
+    required this.userId,
+    required this.name,
+    required this.targetBodyParts,
+    required this.plannedDurationMinutes,
+    required this.createdAt,
+    this.startedAt,
+    this.completedAt,
+    this.status = WorkoutStatus.planned,
+    this.notes,
+    this.exerciseCount = 0,
+    this.totalSets = 0,
+    this.totalVolume = 0.0,
+    this.completedSets = 0,
+  });
+
+  /// Factory constructor from database query results
+  /// Uses optimized SQL query with aggregated data to avoid N+1 queries
+  factory WorkoutSummary.fromDatabaseRow(Map<String, dynamic> row) {
+    print('📊 [WORKOUT_SUMMARY] Creating summary from database row');
+    print('📊 [WORKOUT_SUMMARY] Workout: ${row['name']} (${row['workout_id']})');
+    print('📊 [WORKOUT_SUMMARY] Exercise count: ${row['exercise_count'] ?? 0}');
+    print('📊 [WORKOUT_SUMMARY] Total volume: ${row['total_volume'] ?? 0.0}');
+    
+    return WorkoutSummary(
+      workoutId: row['workout_id'] as String,
+      userId: row['user_id'] as String,
+      name: row['name'] as String,
+      targetBodyParts: Workout._parseStringList(row['target_body_parts'] as String?),
+      plannedDurationMinutes: row['planned_duration_minutes'] as int,
+      createdAt: DateTime.parse(row['created_at'] as String),
+      startedAt: row['started_at'] != null ? DateTime.parse(row['started_at'] as String) : null,
+      completedAt: row['completed_at'] != null ? DateTime.parse(row['completed_at'] as String) : null,
+      status: WorkoutStatus.values[row['status'] as int],
+      notes: row['notes'] as String?,
+      exerciseCount: row['exercise_count'] as int? ?? 0,
+      totalSets: row['total_sets'] as int? ?? 0,
+      totalVolume: (row['total_volume'] as num?)?.toDouble() ?? 0.0,
+      completedSets: row['completed_sets'] as int? ?? 0,
+    );
+  }
+
+  /// Create from full Workout model (for compatibility)
+  factory WorkoutSummary.fromWorkout(Workout workout) {
+    print('🔄 [WORKOUT_SUMMARY] Converting full workout to summary');
+    print('🔄 [WORKOUT_SUMMARY] Workout: ${workout.name} with ${workout.exercises.length} exercises');
+    
+    return WorkoutSummary(
+      workoutId: workout.workoutId,
+      userId: workout.userId,
+      name: workout.name,
+      targetBodyParts: workout.targetBodyParts,
+      plannedDurationMinutes: workout.plannedDurationMinutes,
+      createdAt: workout.createdAt,
+      startedAt: workout.startedAt,
+      completedAt: workout.completedAt,
+      status: workout.status,
+      notes: workout.notes,
+      exerciseCount: workout.exercises.length,
+      totalSets: workout.totalSets,
+      totalVolume: workout.totalVolume,
+      completedSets: workout.exercises.fold(0, (sum, ex) => sum + ex.completedSets),
+    );
+  }
+
+  // Helper methods - same as Workout model
+  Duration get actualDuration {
+    if (startedAt != null && completedAt != null) {
+      return completedAt!.difference(startedAt!);
+    }
+    return Duration.zero;
+  }
+  
+  bool get isCompleted => status == WorkoutStatus.completed;
+  bool get isInProgress => status == WorkoutStatus.inProgress;
+  bool get isPlanned => status == WorkoutStatus.planned;
+  
+  String get formattedDuration {
+    if (actualDuration == Duration.zero) {
+      return '${plannedDurationMinutes}min planned';
+    }
+    final minutes = actualDuration.inMinutes;
+    return '${minutes}min actual';
+  }
+
+  /// Get completion percentage for in-progress workouts
+  double get completionPercentage {
+    if (totalSets == 0) return 0.0;
+    return completedSets / totalSets;
+  }
+
+  /// Get formatted completion status
+  String get completionStatus {
+    if (isCompleted) return 'Completed';
+    if (isInProgress) {
+      if (totalSets > 0) {
+        final percentage = (completionPercentage * 100).round();
+        return '$percentage% complete ($completedSets/$totalSets sets)';
+      }
+      return 'In Progress';
+    }
+    return 'Planned';
+  }
+
+  /// Convert summary back to full Workout model if needed
+  /// Note: This will have empty exercises list - use repository to load full data
+  Workout toWorkout() {
+    print('⚠️  [WORKOUT_SUMMARY] Converting summary to full workout - exercises will be empty!');
+    print('⚠️  [WORKOUT_SUMMARY] Use WorkoutRepository.getWorkout() to load complete data');
+    
+    return Workout(
+      workoutId: workoutId,
+      userId: userId,
+      name: name,
+      targetBodyParts: targetBodyParts,
+      plannedDurationMinutes: plannedDurationMinutes,
+      createdAt: createdAt,
+      startedAt: startedAt,
+      completedAt: completedAt,
+      status: status,
+      notes: notes,
+      exercises: [], // Empty - summary doesn't contain exercise details
+    );
+  }
+}
