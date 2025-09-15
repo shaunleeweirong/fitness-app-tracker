@@ -451,6 +451,19 @@ class WorkoutTemplate {
 
   /// Factory constructor from SQLite Map
   factory WorkoutTemplate.fromMap(Map<String, dynamic> map, {List<TemplateExercise>? exercises}) {
+    // Try to parse exercises from map if provided, otherwise use the passed exercises parameter
+    List<TemplateExercise> finalExercises = exercises ?? [];
+    
+    if (exercises == null && map.containsKey('exercises')) {
+      // Deserialize exercises from the map (for cached data)
+      final exercisesData = map['exercises'];
+      if (exercisesData is List) {
+        finalExercises = exercisesData
+            .map((e) => TemplateExercise.fromMap(e as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    
     return WorkoutTemplate(
       templateId: map['template_id'] as String,
       userId: map['user_id'] as String,
@@ -465,11 +478,11 @@ class WorkoutTemplate {
       updatedAt: DateTime.parse(map['updated_at'] as String),
       lastUsedAt: map['last_used_at'] != null ? DateTime.parse(map['last_used_at'] as String) : null,
       usageCount: map['usage_count'] as int? ?? 0,
-      exercises: exercises ?? [],
+      exercises: finalExercises,
     );
   }
 
-  /// Convert to SQLite Map
+  /// Convert to SQLite Map (for database storage)
   Map<String, dynamic> toMap() {
     return {
       'template_id': templateId,
@@ -485,6 +498,26 @@ class WorkoutTemplate {
       'updated_at': updatedAt.toIso8601String(),
       'last_used_at': lastUsedAt?.toIso8601String(),
       'usage_count': usageCount,
+    };
+  }
+
+  /// Convert to complete Map including exercises (for caching/serialization)
+  Map<String, dynamic> toCompleteMap() {
+    return {
+      'template_id': templateId,
+      'user_id': userId,
+      'name': name,
+      'description': description,
+      'target_body_parts': Workout._stringListToString(targetBodyParts),
+      'estimated_duration_minutes': estimatedDurationMinutes,
+      'difficulty_level': difficulty.index,
+      'category': category.name,
+      'is_favorite': isFavorite ? 1 : 0,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'last_used_at': lastUsedAt?.toIso8601String(),
+      'usage_count': usageCount,
+      'exercises': exercises.map((e) => e.toMap()).toList(),
     };
   }
 

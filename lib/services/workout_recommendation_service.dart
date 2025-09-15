@@ -38,7 +38,10 @@ class WorkoutRecommendationService {
       
       if (systemTemplates.isNotEmpty) {
         for (final template in systemTemplates) {
-          print('   📝 System template: ${template.name} (${template.category.name})');
+          print('   📝 System template: ${template.name} (${template.category.name}) - ${template.exercises.length} exercises');
+          if (template.exercises.isEmpty) {
+            print('   ⚠️  WARNING: Template ${template.name} has 0 exercises loaded!');
+          }
         }
       }
       
@@ -53,6 +56,24 @@ class WorkoutRecommendationService {
       // Apply recommendation logic
       final recommendation = await _selectRecommendedTemplate(allTemplates, userId);
       print('🎯 Selected recommendation: ${recommendation?.name ?? 'None'}');
+      if (recommendation != null) {
+        print('🎯 Recommendation details:');
+        print('   - Name: ${recommendation.name}');
+        print('   - Category: ${recommendation.category.name}');
+        print('   - Exercises: ${recommendation.exercises.length}');
+        print('   - Duration: ${recommendation.estimatedDurationMinutes}min');
+        print('   - Target body parts: ${recommendation.targetBodyParts}');
+        
+        if (recommendation.exercises.isEmpty) {
+          print('   ⚠️  CRITICAL: Selected recommendation has 0 exercises!');
+        } else {
+          print('   📋 Exercise list:');
+          for (var i = 0; i < recommendation.exercises.length; i++) {
+            final ex = recommendation.exercises[i];
+            print('      ${i + 1}. ${ex.exerciseName} (${ex.suggestedSets} sets, ${ex.suggestedRepsMin}-${ex.suggestedRepsMax} reps)');
+          }
+        }
+      }
       
       // Cache the recommendation for today
       if (recommendation != null) {
@@ -252,6 +273,12 @@ class WorkoutRecommendationService {
         
         final template = WorkoutTemplate.fromMap(cachedMap);
         print('✅ Successfully deserialized template: ${template.name}');
+        print('📊 Cached template details:');
+        print('   - Exercises: ${template.exercises.length}');
+        print('   - Category: ${template.category.name}');
+        if (template.exercises.isEmpty) {
+          print('   ⚠️  WARNING: Cached template has 0 exercises! Cache may be incomplete.');
+        }
         return template;
       } else {
         print('❌ No cached data found for key: $cacheKey');
@@ -277,11 +304,23 @@ class WorkoutRecommendationService {
       final reasonCacheKey = _getTodaysReasonCacheKey();
       
       print('💾 Caching recommendation with key: $cacheKey');
-      print('📋 Template details: ${template.name} (${template.category.name})');
+      print('📋 Template details: ${template.name} (${template.category.name}) - ${template.exercises.length} exercises');
       
-      // Cache the template
-      final templateMap = template.toMap();
+      if (template.exercises.isEmpty) {
+        print('   ⚠️  CRITICAL: Attempting to cache template with 0 exercises!');
+      }
+      
+      // Cache the template with complete data including exercises
+      final templateMap = template.toCompleteMap();
       print('🗃️ Template map keys: ${templateMap.keys.toList()}');
+      print('🗃️ Template map exercises key: ${templateMap.containsKey('exercises') ? 'present' : 'missing'}');
+      if (templateMap.containsKey('exercises')) {
+        final exercisesData = templateMap['exercises'];
+        print('🗃️ Exercises data type: ${exercisesData.runtimeType}');
+        if (exercisesData is List) {
+          print('🗃️ Exercises list length: ${exercisesData.length}');
+        }
+      }
       
       final templateJson = jsonEncode(templateMap);
       print('📝 JSON length: ${templateJson.length} chars');
@@ -356,6 +395,22 @@ class WorkoutRecommendationService {
       print('🧹 Cleared today\'s recommendation cache');
     } catch (e) {
       print('Error clearing cache: $e');
+    }
+  }
+
+  /// Clear all recommendation caches (for debugging)
+  Future<void> clearAllCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((k) => k.startsWith(_cacheKeyPrefix) || k.startsWith(_cacheReasonKeyPrefix)).toList();
+      
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+      
+      print('🧹 Cleared ${keys.length} recommendation cache entries');
+    } catch (e) {
+      print('Error clearing all cache: $e');
     }
   }
 

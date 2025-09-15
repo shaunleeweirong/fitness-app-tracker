@@ -120,10 +120,15 @@ class WorkoutTemplateRepository {
       offset: offset,
     );
     
+    print('🔍 [TEMPLATE_REPO] Found ${templateMaps.length} template records for userId: $userId');
+    
     // Load exercises for each template
     final templates = <WorkoutTemplate>[];
     for (final templateMap in templateMaps) {
       final templateId = templateMap['template_id'] as String;
+      final templateName = templateMap['name'] as String;
+      
+      print('🔍 [TEMPLATE_REPO] Loading exercises for template: $templateName (ID: $templateId)');
       
       final exerciseMaps = await db.query(
         DatabaseHelper.tableTemplateExercises,
@@ -132,8 +137,24 @@ class WorkoutTemplateRepository {
         orderBy: 'order_index ASC',
       );
       
+      print('📋 [TEMPLATE_REPO] Found ${exerciseMaps.length} exercises for template: $templateName');
+      
+      if (exerciseMaps.isEmpty) {
+        print('⚠️  [TEMPLATE_REPO] WARNING: Template $templateName has no exercises in database!');
+      } else {
+        for (var i = 0; i < exerciseMaps.length; i++) {
+          final exerciseMap = exerciseMaps[i];
+          final exerciseName = exerciseMap['exercise_name'] as String;
+          final suggestedSets = exerciseMap['suggested_sets'] as int?;
+          print('   📝 Exercise ${i + 1}: $exerciseName ($suggestedSets sets)');
+        }
+      }
+      
       final exercises = exerciseMaps.map((map) => TemplateExercise.fromMap(map)).toList();
-      templates.add(WorkoutTemplate.fromMap(templateMap, exercises: exercises));
+      final template = WorkoutTemplate.fromMap(templateMap, exercises: exercises);
+      
+      print('✅ [TEMPLATE_REPO] Created template: ${template.name} with ${template.exercises.length} exercises');
+      templates.add(template);
     }
     
     return templates;

@@ -268,7 +268,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRecommendation();
+    // Clear cache on startup to ensure we get fresh data with the fix
+    _clearCacheAndLoad();
+  }
+
+  Future<void> _clearCacheAndLoad() async {
+    print('🚀 [HOME_SCREEN] App startup - clearing cache for testing');
+    await _recommendationService.clearAllCache();
+    await _loadRecommendation();
   }
 
   @override
@@ -288,6 +295,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       print('📱 Loading workout recommendation (attempt ${_retryCount + 1}/$_maxRetries)...');
       final recommendation = await _recommendationService.getTodaysRecommendation();
+      
+      print('📱 [HOME_SCREEN] Received recommendation: ${recommendation?.name ?? 'null'}');
+      if (recommendation != null) {
+        print('📱 [HOME_SCREEN] Recommendation exercise count: ${recommendation.exercises.length}');
+        if (recommendation.exercises.isEmpty) {
+          print('⚠️  [HOME_SCREEN] WARNING: Received recommendation with 0 exercises!');
+        }
+      }
       
       if (mounted) {
         // Try to get cached reason first, then generate if not available
@@ -347,23 +362,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _refreshRecommendation() async {
-    print('🔄 Manual refresh triggered');
+    print('🔄 [HOME_SCREEN] Manual refresh triggered - clearing ALL cache');
     _retryCount = 0;
     
-    // Clear cache and force fresh load for debugging
-    final freshRecommendation = await _recommendationService.getDebugFreshRecommendation();
+    // Clear ALL recommendation cache entries to force fresh load
+    await _recommendationService.clearAllCache();
     
-    if (mounted) {
-      final reason = freshRecommendation != null 
-          ? _recommendationService.getRecommendationReason(freshRecommendation)
-          : '';
-      
-      setState(() {
-        _recommendedWorkout = freshRecommendation;
-        _recommendationReason = reason;
-        _isLoadingRecommendation = false;
-      });
-    }
+    // Now load fresh recommendation
+    await _loadRecommendation();
   }
 
   @override
@@ -689,6 +695,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     final workout = _recommendedWorkout!;
+    print('🏠 [HOME_SCREEN] Displaying recommendation: ${workout.name}');
+    print('🏠 [HOME_SCREEN] Exercise count: ${workout.exercises.length}');
+    print('🏠 [HOME_SCREEN] Category: ${workout.category.name}');
+    
+    if (workout.exercises.isEmpty) {
+      print('⚠️  [HOME_SCREEN] CRITICAL: Recommendation has 0 exercises for display!');
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
