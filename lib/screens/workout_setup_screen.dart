@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/workout.dart';
+import '../models/exercise.dart';
 import '../services/workout_repository.dart';
 import '../services/database_helper.dart';
+import 'exercise_selection_screen.dart';
 
 /// Workout customization screen for creating new workouts
 /// Allows users to select workout duration and target muscle groups, or start from a template
@@ -945,10 +947,89 @@ class _WorkoutSetupScreenState extends State<WorkoutSetupScreen> {
     }
   }
   
-  void _addExercise() {
+  void _addExercise() async {
     print('➕ [EXERCISE_ADD] Add exercise button clicked');
-    // TODO: Implement exercise browser
-    // This will be implemented in the next task
+    
+    try {
+      // Get list of already selected exercise IDs to exclude from selection
+      final excludeIds = _currentExercises.map((e) => e.exerciseId).toList();
+      print('📋 [EXERCISE_ADD] Excluding ${excludeIds.length} already selected exercises');
+      
+      // Navigate to exercise selection screen
+      final selectedExercises = await Navigator.of(context).push<List<Exercise>>(
+        MaterialPageRoute(
+          builder: (context) => ExerciseSelectionScreen(
+            excludeExerciseIds: excludeIds,
+          ),
+        ),
+      );
+      
+      if (selectedExercises != null && selectedExercises.isNotEmpty) {
+        print('✅ [EXERCISE_ADD] User selected ${selectedExercises.length} exercises');
+        
+        setState(() {
+          _isCreating = true;
+        });
+        
+        try {
+          // Convert selected exercises to UserExercise format and add to workout
+          for (final exercise in selectedExercises) {
+            final userExercise = UserExercise(
+              userExerciseId: 'user_ex_${DateTime.now().millisecondsSinceEpoch}_${exercise.exerciseId}',
+              exerciseId: exercise.exerciseId,
+              exerciseName: exercise.name,
+              bodyParts: exercise.bodyParts,
+              orderIndex: _currentExercises.length, // Add at end
+              suggestedSets: 3, // Default sets
+              suggestedRepsMin: 8, // Default rep range
+              suggestedRepsMax: 12,
+            );
+            
+            _currentExercises.add(userExercise);
+            print('➕ [EXERCISE_ADD] Added exercise: ${exercise.name}');
+          }
+          
+          // Mark workout as having modifications
+          _hasExerciseModifications = true;
+          print('📝 [EXERCISE_ADD] Marked workout as modified');
+          
+          // Show success feedback
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  selectedExercises.length == 1
+                      ? 'Added ${selectedExercises.first.name}'
+                      : 'Added ${selectedExercises.length} exercises',
+                ),
+                backgroundColor: Colors.green.shade800,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          
+        } catch (e) {
+          print('❌ [EXERCISE_ADD] Error adding exercises: $e');
+          if (mounted) {
+            _showError('Failed to add exercises: $e');
+          }
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isCreating = false;
+            });
+          }
+        }
+      } else {
+        print('❌ [EXERCISE_ADD] No exercises selected or user cancelled');
+      }
+      
+    } catch (e) {
+      print('❌ [EXERCISE_ADD] Error opening exercise selection: $e');
+      if (mounted) {
+        _showError('Failed to open exercise selection: $e');
+      }
+    }
   }
   
   WorkoutCustomizations _createWorkoutCustomizations(WorkoutTemplate template) {
