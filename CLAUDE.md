@@ -15,7 +15,7 @@ Weight lifters (beginners to advanced), fitness enthusiasts seeking structured p
 
 ## Current Status & Major Accomplishments
 
-### ✅ Core MVP Complete (Phases 1A-1H + Phase 2 + Progress Enhancement)
+### ✅ Core MVP Complete (Phases 1A-1H + Phase 2 + Progress Enhancement + Exercise System)
 - ✅ **Phase 1A-1C:** Foundation, UI styling, Exercise Database (1,500+ exercises), visual body part selection
 - ✅ **Phase 1D:** Complete Workout Logging with SQLite, statistics, history, real-time tracking
 - ✅ **Phase 1E:** Rest Timer with audio notifications and workout integration
@@ -25,6 +25,7 @@ Weight lifters (beginners to advanced), fitness enthusiasts seeking structured p
 - ✅ **Progress Screen:** Custom chart implementation, overflow fixes, layout optimization
 - ✅ **Database Stability:** Connection lifecycle fixes with retry logic
 - ✅ **Chart System:** Replaced fl_chart with custom CustomPainter for better control
+- ✅ **Exercise System:** Add Exercise functionality, exercise persistence, data flow fixes
 - 🎯 **Next:** Workout History Management & Phase 1I
 
 ### 🚀 Technical Architecture
@@ -36,7 +37,7 @@ Weight lifters (beginners to advanced), fitness enthusiasts seeking structured p
 - **Performance**: Local-first approach, optimized loading, error recovery, real-time search
 
 ### 🎪 Ready for Enhancement (Phase 1I+)
-Complete MVP with exercise customization ready for: Progress tracking with body part visualization, gamification (XP/achievements), radar charts, Firebase authentication
+Complete MVP with exercise system ready for: Progress tracking with body part visualization, gamification (XP/achievements), radar charts, Firebase authentication
 
 ---
 
@@ -65,6 +66,14 @@ Complete MVP with exercise customization ready for: Progress tracking with body 
 - **Key Files**: `user_workout_repository.dart`, updated `workout_setup_screen.dart`, `models/workout.dart`
 
 ### Key Bug Fixes & Enhancements ✅
+
+#### Exercise System Implementation ✅
+**Problem**: "Add Exercise" button non-functional, exercise persistence broken between screens
+**Solution**: Complete exercise addition system with persistence fixes
+- **Files**: `exercise_selection_screen.dart` (new), `workout_setup_screen.dart`
+- **Features**: Multi-select exercise browsing, search/filtering, proper data flow
+- **Fix**: workout_id persistence issue in `WorkoutRepository.saveWorkout()`
+- **Result**: Full exercise customization with template preservation
 
 #### Body Silhouette Enhancement ✅
 **Solution**: `Transform` with `Matrix4.diagonal3Values(1.8, 1.3, 1.0)` for asymmetric scaling
