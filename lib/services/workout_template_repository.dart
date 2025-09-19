@@ -335,7 +335,7 @@ class WorkoutTemplateRepository {
       double? suggestedWeight = completedSets.isNotEmpty ? completedSets.map((s) => s.weight).reduce((a, b) => a + b) / completedSets.length : null;
       
       final templateExercise = TemplateExercise(
-        templateExerciseId: _dbHelper.generateTemplateExerciseId(templateId, workoutExercise.exerciseId),
+        templateExerciseId: _dbHelper.generateTemplateExerciseId(templateId, workoutExercise.exerciseId, workoutExercise.orderIndex),
         templateId: templateId,
         exerciseId: workoutExercise.exerciseId,
         exerciseName: workoutExercise.exerciseName,

@@ -42,7 +42,8 @@ class WorkoutRepository {
         final exercise = workout.exercises[i];
         final exerciseId = _dbHelper.generateWorkoutExerciseId(
           workout.workoutId, 
-          exercise.exerciseId
+          exercise.exerciseId,
+          i
         );
         
         debugPrint('💾 [SAVE_WORKOUT] Saving exercise $i: ${exercise.exerciseName}');
@@ -301,7 +302,8 @@ class WorkoutRepository {
           final exercise = workout.exercises[i];
           final exerciseId = _dbHelper.generateWorkoutExerciseId(
             workout.workoutId, 
-            exercise.exerciseId
+            exercise.exerciseId,
+            i
           );
           
           debugPrint('   Inserting exercise ${i + 1}: ${exercise.exerciseName}');

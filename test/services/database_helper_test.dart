@@ -86,17 +86,19 @@ void main() {
     });
 
     test('should generate unique workout exercise IDs', () {
-      final id1 = dbHelper.generateWorkoutExerciseId('workout_1', 'exercise_1');
-      final id2 = dbHelper.generateWorkoutExerciseId('workout_1', 'exercise_2');
-      final id3 = dbHelper.generateWorkoutExerciseId('workout_2', 'exercise_1');
+      final id1 = dbHelper.generateWorkoutExerciseId('workout_1', 'exercise_1', 0);
+      final id2 = dbHelper.generateWorkoutExerciseId('workout_1', 'exercise_2', 1);
+      final id3 = dbHelper.generateWorkoutExerciseId('workout_2', 'exercise_1', 0);
+      final id4 = dbHelper.generateWorkoutExerciseId('workout_1', 'exercise_1', 1); // Same exercise, different order
       
-      expect(id1, 'workout_1_exercise_1');
-      expect(id2, 'workout_1_exercise_2');
-      expect(id3, 'workout_2_exercise_1');
+      expect(id1, 'workout_1_exercise_1_0');
+      expect(id2, 'workout_1_exercise_2_1');
+      expect(id3, 'workout_2_exercise_1_0');
+      expect(id4, 'workout_1_exercise_1_1');
       
-      // Verify all IDs are unique
-      final ids = {id1, id2, id3};
-      expect(ids.length, 3);
+      // Verify all IDs are unique (including duplicate exercises with different order)
+      final ids = {id1, id2, id3, id4};
+      expect(ids.length, 4);
     });
 
     test('should provide database information', () async {
@@ -104,7 +106,7 @@ void main() {
       
       final info = await dbHelper.getDatabaseInfo();
       
-      expect(info['version'], 1);
+      expect(info['version'], 4);
       expect(info['isHealthy'], true);
       expect(info['path'], isNotNull);
       expect(info['tables'], isNotNull);

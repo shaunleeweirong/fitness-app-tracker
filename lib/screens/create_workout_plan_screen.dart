@@ -137,7 +137,7 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
         print('   📝 Processing exercise $i: ${exercise.exerciseName}');
         
         try {
-          final templateExerciseId = _dbHelper.generateTemplateExerciseId(templateId, exercise.exerciseId);
+          final templateExerciseId = _dbHelper.generateTemplateExerciseId(templateId, exercise.exerciseId, i);
           print('     🆔 Generated exercise ID: $templateExerciseId');
           
           templateExercises.add(exercise.copyWith(

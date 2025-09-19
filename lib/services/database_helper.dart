@@ -551,11 +551,12 @@ class DatabaseHelper {
   }
 
   /// Generate unique workout exercise ID
-  String generateWorkoutExerciseId(String workoutId, String exerciseId) {
-    final generatedId = '${workoutId}_$exerciseId';
+  String generateWorkoutExerciseId(String workoutId, String exerciseId, int orderIndex) {
+    final generatedId = '${workoutId}_${exerciseId}_$orderIndex';
     debugPrint('🔑 GENERATING workout_exercise_id:');
     debugPrint('   Input workoutId: $workoutId');
-    debugPrint('   Input exerciseId: $exerciseId');  
+    debugPrint('   Input exerciseId: $exerciseId');
+    debugPrint('   Input orderIndex: $orderIndex');
     debugPrint('   Generated ID: $generatedId');
     return generatedId;
   }
@@ -566,7 +567,7 @@ class DatabaseHelper {
   }
 
   /// Generate unique template exercise ID
-  String generateTemplateExerciseId(String templateId, String exerciseId) {
-    return '${templateId}_$exerciseId';
+  String generateTemplateExerciseId(String templateId, String exerciseId, int orderIndex) {
+    return '${templateId}_${exerciseId}_$orderIndex';
   }
 }
