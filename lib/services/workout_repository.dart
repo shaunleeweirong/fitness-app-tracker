@@ -10,8 +10,20 @@ class WorkoutRepository {
 
   /// Save a new workout to the database
   Future<String> saveWorkout(Workout workout) async {
-    debugPrint('💾 Saving workout: ${workout.name}');
-    debugPrint('📊 Workout has ${workout.exercises.length} exercises');
+    debugPrint('💾 [SAVE_WORKOUT] Starting to save workout: ${workout.name}');
+    debugPrint('📊 [SAVE_WORKOUT] Workout has ${workout.exercises.length} exercises');
+    debugPrint('🔍 [SAVE_WORKOUT] Workout ID: ${workout.workoutId}');
+    debugPrint('🔍 [SAVE_WORKOUT] Workout status: ${workout.status}');
+    debugPrint('🔍 [SAVE_WORKOUT] Target body parts: ${workout.targetBodyParts}');
+    
+    // Log each exercise being saved
+    for (var i = 0; i < workout.exercises.length; i++) {
+      final exercise = workout.exercises[i];
+      debugPrint('📝 [SAVE_WORKOUT] Exercise $i: ${exercise.exerciseName}');
+      debugPrint('📝 [SAVE_WORKOUT]   Exercise ID: ${exercise.exerciseId}');
+      debugPrint('📝 [SAVE_WORKOUT]   Body parts: ${exercise.bodyParts}');
+      debugPrint('📝 [SAVE_WORKOUT]   Sets: ${exercise.sets.length}');
+    }
     
     final db = await _dbHelper.database;
     
@@ -22,23 +34,37 @@ class WorkoutRepository {
         workout.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      debugPrint('✅ Workout record saved');
+      debugPrint('✅ [SAVE_WORKOUT] Main workout record saved');
       
       // Insert workout exercises
-      debugPrint('💾 Saving ${workout.exercises.length} workout exercises...');
-      for (final exercise in workout.exercises) {
+      debugPrint('💾 [SAVE_WORKOUT] Saving ${workout.exercises.length} workout exercises...');
+      for (var i = 0; i < workout.exercises.length; i++) {
+        final exercise = workout.exercises[i];
         final exerciseId = _dbHelper.generateWorkoutExerciseId(
           workout.workoutId, 
           exercise.exerciseId
         );
         
-        debugPrint('  Saving exercise: ${exercise.exerciseName} (ID: ${exercise.exerciseId})');
+        debugPrint('💾 [SAVE_WORKOUT] Saving exercise $i: ${exercise.exerciseName}');
+        debugPrint('💾 [SAVE_WORKOUT]   Generated workout_exercise_id: $exerciseId');
+        debugPrint('💾 [SAVE_WORKOUT]   Original exercise_id: ${exercise.exerciseId}');
+        debugPrint('💾 [SAVE_WORKOUT]   Body parts: ${exercise.bodyParts}');
+        
+        final exerciseMap = exercise.toMap();
+        exerciseMap['workout_exercise_id'] = exerciseId;
+        exerciseMap['workout_id'] = workout.workoutId; // FIX: Set the workout_id properly
+        
+        debugPrint('💾 [SAVE_WORKOUT]   Exercise map keys: ${exerciseMap.keys.toList()}');
+        debugPrint('💾 [SAVE_WORKOUT]   Exercise map workout_id value: ${exerciseMap['workout_id']}');
+        debugPrint('💾 [SAVE_WORKOUT]   Full exercise map: $exerciseMap');
         
         await txn.insert(
           DatabaseHelper.tableWorkoutExercises,
-          exercise.toMap()..['workout_exercise_id'] = exerciseId,
+          exerciseMap,
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        
+        debugPrint('✅ [SAVE_WORKOUT] Exercise $i saved successfully');
         
         // Insert workout sets
         for (final set in exercise.sets) {
@@ -51,13 +77,14 @@ class WorkoutRepository {
       }
     });
     
-    debugPrint('🎉 Workout saved successfully: ${workout.workoutId}');
+    debugPrint('🎉 [SAVE_WORKOUT] Transaction completed successfully');
+    debugPrint('✅ [SAVE_WORKOUT] Workout saved with ${workout.exercises.length} exercises');
     return workout.workoutId;
   }
 
   /// Load a specific workout by ID with all exercises and sets
   Future<Workout?> getWorkout(String workoutId) async {
-    debugPrint('📥 Loading workout: $workoutId');
+    debugPrint('📥 [LOAD_WORKOUT] Starting to load workout: $workoutId');
     
     final db = await _dbHelper.database;
     
@@ -69,13 +96,21 @@ class WorkoutRepository {
     );
     
     if (workoutMaps.isEmpty) {
-      debugPrint('❌ Workout not found: $workoutId');
+      debugPrint('❌ [LOAD_WORKOUT] Workout not found: $workoutId');
       return null;
     }
     
-    debugPrint('✅ Workout record found');
+    debugPrint('✅ [LOAD_WORKOUT] Main workout record found');
+    final workoutMap = workoutMaps.first;
+    debugPrint('🔍 [LOAD_WORKOUT] Workout name: ${workoutMap['name']}');
+    debugPrint('🔍 [LOAD_WORKOUT] Workout status: ${workoutMap['status']}');
     
     // Get workout exercises
+    debugPrint('🔍 [LOAD_WORKOUT] Querying workout exercises...');
+    debugPrint('🔍 [LOAD_WORKOUT] Table: ${DatabaseHelper.tableWorkoutExercises}');
+    debugPrint('🔍 [LOAD_WORKOUT] WHERE clause: workout_id = ?');
+    debugPrint('🔍 [LOAD_WORKOUT] Parameter: $workoutId');
+    
     final exerciseMaps = await db.query(
       DatabaseHelper.tableWorkoutExercises,
       where: 'workout_id = ?',
@@ -83,15 +118,30 @@ class WorkoutRepository {
       orderBy: 'order_index ASC',
     );
     
-    debugPrint('📋 Found ${exerciseMaps.length} workout exercises');
+    debugPrint('🔍 [LOAD_WORKOUT] Raw query result: ${exerciseMaps.length} rows');
+    if (exerciseMaps.isNotEmpty) {
+      debugPrint('🔍 [LOAD_WORKOUT] First row keys: ${exerciseMaps.first.keys.toList()}');
+      debugPrint('🔍 [LOAD_WORKOUT] First row data: ${exerciseMaps.first}');
+    }
+    
+    debugPrint('📋 [LOAD_WORKOUT] Found ${exerciseMaps.length} workout exercises in database');
+    
+    if (exerciseMaps.isEmpty) {
+      debugPrint('⚠️ [LOAD_WORKOUT] WARNING: No exercises found for workout $workoutId');
+    }
     
     final List<WorkoutExercise> exercises = [];
     
-    for (final exerciseMap in exerciseMaps) {
+    for (var i = 0; i < exerciseMaps.length; i++) {
+      final exerciseMap = exerciseMaps[i];
       final exerciseId = exerciseMap['workout_exercise_id'] as String;
       final exerciseName = exerciseMap['exercise_name'] as String;
+      final originalExerciseId = exerciseMap['exercise_id'] as String;
       
-      debugPrint('  Loading exercise: $exerciseName (ID: ${exerciseMap['exercise_id']})');
+      debugPrint('📋 [LOAD_WORKOUT] Loading exercise $i: $exerciseName');
+      debugPrint('📋 [LOAD_WORKOUT]   workout_exercise_id: $exerciseId');
+      debugPrint('📋 [LOAD_WORKOUT]   original exercise_id: $originalExerciseId');
+      debugPrint('📋 [LOAD_WORKOUT]   exercise map keys: ${exerciseMap.keys.toList()}');
       
       // Get sets for this exercise
       final setMaps = await db.query(
@@ -101,13 +151,25 @@ class WorkoutRepository {
         orderBy: 'set_number ASC',
       );
       
+      debugPrint('📋 [LOAD_WORKOUT]   Found ${setMaps.length} sets for exercise $i');
+      
       final sets = setMaps.map((setMap) => WorkoutSet.fromMap(setMap)).toList();
       final exercise = WorkoutExercise.fromMap(exerciseMap, sets: sets);
       exercises.add(exercise);
+      
+      debugPrint('✅ [LOAD_WORKOUT] Exercise $i loaded successfully');
     }
     
+    debugPrint('🎯 [LOAD_WORKOUT] Creating final workout object...');
     final workout = Workout.fromMap(workoutMaps.first, exercises: exercises);
-    debugPrint('🎉 Workout loaded successfully with ${workout.exercises.length} exercises');
+    debugPrint('🎯 [LOAD_WORKOUT] Final workout created with ${workout.exercises.length} exercises');
+    debugPrint('🎉 [LOAD_WORKOUT] Workout loaded successfully with ${workout.exercises.length} exercises');
+    
+    // Log final workout exercises for verification
+    for (var i = 0; i < workout.exercises.length; i++) {
+      final exercise = workout.exercises[i];
+      debugPrint('🎯 [LOAD_WORKOUT] Final exercise $i: ${exercise.exerciseName}');
+    }
     
     return workout;
   }

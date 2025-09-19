@@ -847,6 +847,17 @@ class UserWorkout {
     print('🔄 [USER_WORKOUT] User workout: $name');
     print('🔄 [USER_WORKOUT] Exercise count: ${exercises.length}');
     
+    // Log each user exercise being converted
+    for (var i = 0; i < exercises.length; i++) {
+      final userExercise = exercises[i];
+      print('🔄 [USER_WORKOUT] Converting exercise $i: ${userExercise.exerciseName}');
+      print('🔄 [USER_WORKOUT]   Exercise ID: ${userExercise.exerciseId}');
+      print('🔄 [USER_WORKOUT]   Body parts: ${userExercise.bodyParts}');
+    }
+    
+    final workoutExercises = exercises.map((userExercise) => userExercise.toWorkoutExercise()).toList();
+    print('🔄 [USER_WORKOUT] Converted to ${workoutExercises.length} workout exercises');
+    
     return Workout(
       workoutId: 'workout_${DateTime.now().millisecondsSinceEpoch}',
       userId: userId,
@@ -855,7 +866,7 @@ class UserWorkout {
       plannedDurationMinutes: plannedDurationMinutes,
       createdAt: DateTime.now(),
       status: WorkoutStatus.planned,
-      exercises: exercises.map((userExercise) => userExercise.toWorkoutExercise()).toList(),
+      exercises: workoutExercises,
       notes: notes,
     );
   }
@@ -1059,7 +1070,12 @@ class UserExercise {
 
   /// Convert to WorkoutExercise for actual workout execution
   WorkoutExercise toWorkoutExercise() {
-    return WorkoutExercise(
+    print('🔄 [USER_EXERCISE] Converting UserExercise to WorkoutExercise: $exerciseName');
+    print('🔄 [USER_EXERCISE]   Exercise ID: $exerciseId');
+    print('🔄 [USER_EXERCISE]   Body parts: $bodyParts');
+    print('🔄 [USER_EXERCISE]   Order index: $orderIndex');
+    
+    final workoutExercise = WorkoutExercise(
       exerciseId: exerciseId,
       exerciseName: exerciseName,
       bodyParts: List.from(bodyParts),
@@ -1068,6 +1084,9 @@ class UserExercise {
       orderIndex: orderIndex,
       workoutId: '', // Will be set when added to workout
     );
+    
+    print('✅ [USER_EXERCISE] Converted successfully');
+    return workoutExercise;
   }
 
   /// Get rep range as formatted string
