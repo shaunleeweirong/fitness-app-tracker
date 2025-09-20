@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/exercise.dart';
 import '../services/exercise_service.dart';
-import '../widgets/body_silhouette.dart';
 
 /// Screen for selecting exercises to add to a workout
 /// Provides search, filtering, and multi-selection capabilities
@@ -26,7 +25,6 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
   Set<String> _selectedExerciseIds = {};
   bool _isLoading = true;
   String? _selectedBodyPart;
-  bool _showBodySilhouette = false;
   List<String> _bodyParts = [];
 
   @override
@@ -155,32 +153,15 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
-          // Toggle view mode
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _showBodySilhouette = !_showBodySilhouette;
-              });
-            },
-            icon: Icon(
-              _showBodySilhouette ? Icons.list : Icons.accessibility_new,
-              color: const Color(0xFFFFB74D),
-            ),
-            tooltip: _showBodySilhouette ? 'List View' : 'Body View',
-          ),
-        ],
+        actions: [],
       ),
       body: Column(
         children: [
           // Search bar
           _buildSearchBar(),
           
-          // Body part filters or body silhouette
-          if (_showBodySilhouette)
-            _buildBodySilhouetteView()
-          else
-            _buildBodyPartFilters(),
+          // Body part filters
+          _buildBodyPartFilters(),
           
           // Exercise list
           Expanded(
@@ -225,101 +206,6 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
     );
   }
 
-  Widget _buildBodySilhouetteView() {
-    return Expanded(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-        child: Column(
-          children: [
-            // Body Silhouette
-            BodySilhouette(
-              selectedBodyPart: _selectedBodyPart,
-              onBodyPartSelected: _loadExercisesByBodyPart,
-              showLabels: false,
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Exercise count and quick actions
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _selectedBodyPart != null 
-                                    ? '${_selectedBodyPart!.toUpperCase()} EXERCISES'
-                                    : 'ALL EXERCISES',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: const Color(0xFFFFB74D),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_filteredExercises.length} exercises available',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _showBodySilhouette = false;
-                            });
-                          },
-                          icon: const Icon(Icons.list, size: 16),
-                          label: const Text('LIST'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12, 
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    if (_selectedBodyPart != null) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedBodyPart = null;
-                              _showBodySilhouette = false;
-                            });
-                            _loadExercisesByBodyPart(null);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white70,
-                            side: const BorderSide(color: Color(0xFF2A2A2A)),
-                          ),
-                          child: const Text('CLEAR SELECTION'),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildBodyPartFilters() {
     if (_bodyParts.isEmpty) return const SizedBox.shrink();
