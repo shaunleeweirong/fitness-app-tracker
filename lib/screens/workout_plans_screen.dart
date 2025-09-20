@@ -140,6 +140,32 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
     });
   }
 
+  /// Apply unified filtering for any tab (search + category + tab-specific filters)
+  List<WorkoutTemplate> _applyTabFilters(List<WorkoutTemplate> templates, {bool favoritesOnly = false, bool recentOnly = false}) {
+    return templates.where((template) {
+      // Search filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        if (!template.name.toLowerCase().contains(query) &&
+            !(template.description?.toLowerCase().contains(query) ?? false)) {
+          return false;
+        }
+      }
+      
+      // Category filter
+      if (_selectedCategory != null && template.category != _selectedCategory) {
+        return false;
+      }
+      
+      // Tab-specific filters
+      if (favoritesOnly && !template.isFavorite) {
+        return false;
+      }
+      
+      return true;
+    }).toList();
+  }
+
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
@@ -361,7 +387,7 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
               controller: _tabController,
               children: [
                 _buildTemplatesList(_filteredTemplates),
-                _buildTemplatesList(_templates.where((t) => t.isFavorite).toList()),
+                _buildTemplatesList(_applyTabFilters(_templates, favoritesOnly: true)),
                 _buildRecentTemplatesList(),
               ],
             ),
@@ -527,7 +553,8 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen> with SingleTick
         }
 
         final recentTemplates = snapshot.data ?? [];
-        return _buildTemplatesList(recentTemplates);
+        final filteredRecentTemplates = _applyTabFilters(recentTemplates);
+        return _buildTemplatesList(filteredRecentTemplates);
       },
     );
   }
