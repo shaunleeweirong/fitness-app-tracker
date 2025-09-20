@@ -230,6 +230,58 @@ class CommonExerciseService {
     return randomResults;
   }
 
+  /// Get exercises filtered by template category
+  Future<List<Exercise>> getExercisesByCategory(String templateCategory) async {
+    try {
+      debugPrint('🔍 Filtering exercises by category: $templateCategory');
+      await initialize();
+      final allExercises = await getAllExercises();
+      
+      debugPrint('📊 Total exercises before filtering: ${allExercises.length}');
+      
+      final filteredExercises = <Exercise>[];
+      int filteredOutCount = 0;
+      
+      for (final exercise in allExercises) {
+        try {
+          final matches = exercise.matchesTemplateCategory(templateCategory);
+          if (matches) {
+            filteredExercises.add(exercise);
+          } else {
+            filteredOutCount++;
+            if (filteredOutCount <= 10) { // Log first 10 filtered exercises to avoid spam
+              debugPrint('🚫 Exercise "${exercise.name}" filtered out for category $templateCategory');
+            }
+          }
+        } catch (e) {
+          debugPrint('❌ Error checking exercise "${exercise.name}" for category $templateCategory: $e');
+          // Include exercise if filtering fails for that specific exercise
+          filteredExercises.add(exercise);
+        }
+      }
+      
+      debugPrint('✅ Filtered exercises for category $templateCategory: ${filteredExercises.length}');
+      debugPrint('📊 Filtering summary: ${filteredExercises.length} included, $filteredOutCount filtered out');
+      
+      if (filteredOutCount > 10) {
+        debugPrint('ℹ️ ... and ${filteredOutCount - 10} more exercises filtered out (not logged to avoid spam)');
+      }
+      
+      if (filteredExercises.isEmpty) {
+        debugPrint('⚠️ No exercises found for category $templateCategory, returning all exercises as fallback');
+        return allExercises;
+      }
+      
+      _sortByPopularity(filteredExercises);
+      return filteredExercises;
+      
+    } catch (e) {
+      debugPrint('❌ Error filtering exercises by category $templateCategory: $e');
+      // Return all exercises as fallback if filtering fails
+      return getAllExercises();
+    }
+  }
+
   /// Check if the database is loaded and available
   bool get isInitialized => _database != null;
   

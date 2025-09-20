@@ -71,18 +71,77 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
     setState(() => _isLoading = true);
     
     try {
-      final exercises = await _exerciseService.getAllExercises();
+      debugPrint('🔄 Loading exercises for category: ${_category.name}');
+      
+      List<Exercise> exercises;
+      if (_category == TemplateCategory.custom) {
+        // For custom category, load all exercises
+        exercises = await _exerciseService.getAllExercises();
+        debugPrint('📋 Loaded all exercises for custom category: ${exercises.length}');
+      } else {
+        // Filter exercises by selected category
+        exercises = await _exerciseService.getExercisesByCategory(_category.name);
+        debugPrint('📋 Loaded filtered exercises for ${_category.name}: ${exercises.length}');
+      }
+      
       if (mounted) {
         setState(() {
           _availableExercises = exercises;
           _isLoading = false;
         });
+        debugPrint('✅ Exercise loading completed successfully');
       }
     } catch (e) {
+      debugPrint('❌ Failed to load exercises: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         _showError('Failed to load exercises: $e');
       }
+    }
+  }
+
+  /// Reload exercises when category changes
+  Future<void> _reloadExercisesForCategory() async {
+    debugPrint('🔄 Category changed to ${_category.name}, reloading exercises...');
+    await _loadExercises();
+    
+    // Optionally apply smart defaults for body part selection
+    _applySmartDefaultsForCategory();
+  }
+
+  /// Apply smart body part defaults based on category
+  void _applySmartDefaultsForCategory() {
+    try {
+      debugPrint('🎯 Applying smart defaults for category: ${_category.name}');
+      
+      switch (_category) {
+        case TemplateCategory.push:
+          _selectedBodyPart = 'chest';
+          debugPrint('✅ Auto-selected chest for push category');
+          break;
+        case TemplateCategory.pull:
+          _selectedBodyPart = 'back';
+          debugPrint('✅ Auto-selected back for pull category');
+          break;
+        case TemplateCategory.legs:
+          _selectedBodyPart = 'legs';
+          debugPrint('✅ Auto-selected legs for legs category');
+          break;
+        case TemplateCategory.upperBody:
+          _selectedBodyPart = 'chest';
+          debugPrint('✅ Auto-selected chest for upper body category');
+          break;
+        case TemplateCategory.lowerBody:
+          _selectedBodyPart = 'legs';
+          debugPrint('✅ Auto-selected legs for lower body category');
+          break;
+        default:
+          // Don't auto-select for other categories
+          debugPrint('ℹ️ No auto-selection for category: ${_category.name}');
+          break;
+      }
+    } catch (e) {
+      debugPrint('❌ Error applying smart defaults for category ${_category.name}: $e');
     }
   }
 
@@ -646,9 +705,13 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
                   ),
                 );
               }).toList(),
-              onChanged: (category) {
+              onChanged: (category) async {
                 if (category != null) {
+                  debugPrint('📂 Category changed from ${_category.name} to ${category.name}');
                   setState(() => _category = category);
+                  
+                  // Reload exercises for the new category
+                  await _reloadExercisesForCategory();
                 }
               },
             ),
@@ -677,7 +740,9 @@ class _CreateWorkoutPlanScreenState extends State<CreateWorkoutPlanScreen> with 
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose exercises for your workout plan (${_selectedExercises.length} selected)',
+                _category == TemplateCategory.custom 
+                  ? 'Choose exercises for your workout plan (${_selectedExercises.length} selected)'
+                  : 'Choose ${_getCategoryDisplayName(_category).toLowerCase()} exercises (${_selectedExercises.length} selected from ${_availableExercises.length} ${_getCategoryDisplayName(_category).toLowerCase()} exercises)',
                 style: const TextStyle(color: Colors.white60, fontSize: 16),
               ),
             ],

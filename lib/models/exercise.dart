@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/foundation.dart';
 
 part 'exercise.g.dart';
 
@@ -69,6 +70,120 @@ class Exercise {
            equipments.any((equipment) => equipment.toLowerCase().contains(searchLower)) ||
            targetMuscles.any((muscle) => muscle.toLowerCase().contains(searchLower)) ||
            safeKeywords.any((keyword) => keyword.toLowerCase().contains(searchLower));
+  }
+  
+  /// Check if exercise matches a template category
+  bool matchesTemplateCategory(String templateCategory) {
+    try {
+      final categoryLower = templateCategory.toLowerCase();
+      
+      switch (categoryLower) {
+        case 'strength':
+          return _isStrengthExercise();
+        case 'cardio':
+          return _isCardioExercise();
+        case 'fullbody':
+          return _isFullBodyExercise();
+        case 'upperbody':
+          return _isUpperBodyExercise();
+        case 'lowerbody':
+          return _isLowerBodyExercise();
+        case 'push':
+          return _isPushExercise();
+        case 'pull':
+          return _isPullExercise();
+        case 'legs':
+          return _isLegExercise();
+        case 'custom':
+          return true; // Custom category includes all exercises
+        default:
+          debugPrint('⚠️ Unknown template category: $templateCategory, defaulting to true');
+          return true;
+      }
+    } catch (e) {
+      debugPrint('❌ Error filtering exercise ${name} by category $templateCategory: $e');
+      return true; // Include exercise if filtering fails
+    }
+  }
+  
+  bool _isStrengthExercise() {
+    // Check exercise type first
+    if (safeExerciseType.toLowerCase() == 'strength') return true;
+    
+    // Check for strength-based equipment
+    final strengthEquipment = ['barbell', 'dumbbell', 'kettlebell', 'weight', 'machine', 'cable'];
+    if (equipments.any((eq) => strengthEquipment.any((str) => eq.toLowerCase().contains(str)))) {
+      return true;
+    }
+    
+    // Check for strength movement patterns
+    final strengthPatterns = ['squat', 'deadlift', 'bench', 'press', 'row', 'curl', 'extension'];
+    return strengthPatterns.any((pattern) => name.toLowerCase().contains(pattern));
+  }
+  
+  bool _isCardioExercise() {
+    if (safeExerciseType.toLowerCase() == 'cardio') return true;
+    
+    final cardioKeywords = ['running', 'cycling', 'rowing', 'jumping', 'burpee', 'mountain climber', 'high knees'];
+    return cardioKeywords.any((keyword) => name.toLowerCase().contains(keyword)) ||
+           equipments.any((eq) => ['treadmill', 'bike', 'rower', 'elliptical'].contains(eq.toLowerCase()));
+  }
+  
+  bool _isFullBodyExercise() {
+    // Compound movements that work multiple body parts
+    final fullBodyPatterns = ['deadlift', 'clean', 'snatch', 'thruster', 'burpee', 'turkish'];
+    if (fullBodyPatterns.any((pattern) => name.toLowerCase().contains(pattern))) return true;
+    
+    // Check if exercise targets multiple major body parts
+    final majorBodyParts = ['chest', 'back', 'legs', 'shoulders', 'arms'];
+    final targetedParts = bodyParts.where((part) => 
+      majorBodyParts.any((major) => part.toLowerCase().contains(major))
+    ).length;
+    
+    return targetedParts >= 2;
+  }
+  
+  bool _isUpperBodyExercise() {
+    final upperBodyParts = ['chest', 'back', 'shoulders', 'arms', 'biceps', 'triceps', 'lats'];
+    return bodyParts.any((part) => 
+      upperBodyParts.any((upper) => part.toLowerCase().contains(upper))
+    );
+  }
+  
+  bool _isLowerBodyExercise() {
+    final lowerBodyParts = ['legs', 'quads', 'hamstrings', 'glutes', 'calves', 'thighs'];
+    return bodyParts.any((part) => 
+      lowerBodyParts.any((lower) => part.toLowerCase().contains(lower))
+    );
+  }
+  
+  bool _isPushExercise() {
+    // Push movements primarily target chest, shoulders, triceps
+    final pushBodyParts = ['chest', 'shoulders', 'triceps'];
+    final pushPatterns = ['press', 'push', 'fly', 'dip'];
+    
+    return bodyParts.any((part) => 
+      pushBodyParts.any((push) => part.toLowerCase().contains(push))
+    ) || pushPatterns.any((pattern) => name.toLowerCase().contains(pattern));
+  }
+  
+  bool _isPullExercise() {
+    // Pull movements primarily target back, biceps
+    final pullBodyParts = ['back', 'biceps', 'lats'];
+    final pullPatterns = ['pull', 'row', 'curl', 'chin', 'lat'];
+    
+    return bodyParts.any((part) => 
+      pullBodyParts.any((pull) => part.toLowerCase().contains(pull))
+    ) || pullPatterns.any((pattern) => name.toLowerCase().contains(pattern));
+  }
+  
+  bool _isLegExercise() {
+    final legBodyParts = ['legs', 'quads', 'hamstrings', 'glutes', 'calves'];
+    final legPatterns = ['squat', 'lunge', 'leg', 'calf'];
+    
+    return bodyParts.any((part) => 
+      legBodyParts.any((leg) => part.toLowerCase().contains(leg))
+    ) || legPatterns.any((pattern) => name.toLowerCase().contains(pattern));
   }
 }
 
